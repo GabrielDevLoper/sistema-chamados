@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type Mode = "client" | "attendant";
+type Mode = "client" | "attendant" | "display";
 type Service = "Atendimento geral" | "Certidões" | "Registro e reconhecimento";
 type TicketStatus = "waiting" | "called" | "finished" | "no_show";
 
@@ -90,6 +90,9 @@ function ModeSwitch({ mode }: { mode: Mode }) {
       <a className={mode === "attendant" ? "active" : ""} href="/atendente">
         Área do atendente
       </a>
+      <a className={mode === "display" ? "active" : ""} href="/painel">
+        Painel de chamadas
+      </a>
     </nav>
   );
 }
@@ -103,6 +106,9 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   const [desk, setDesk] = useState(1);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [displaySound, setDisplaySound] = useState(false);
+  const announcedCall = useRef<string | null>(null);
+  const audioContext = useRef<AudioContext | null>(null);
 
   const loadQueue = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -175,6 +181,19 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
         .slice(0, 4),
     [queue.tickets]
   );
+  const calledTickets = useMemo(
+    () =>
+      queue.tickets
+        .filter((ticket) => ticket.calledAt && ticket.desk)
+        .sort(
+          (a, b) =>
+            new Date(b.calledAt ?? 0).getTime() -
+            new Date(a.calledAt ?? 0).getTime()
+        ),
+    [queue.tickets]
+  );
+  const featuredTicket = calledTickets[0] ?? null;
+  const previousCalls = calledTickets.slice(1, 5);
   const peopleAhead = createdTicket
     ? queue.tickets.filter(
         (ticket) =>
@@ -184,22 +203,135 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
       ).length
     : 0;
 
+  const announceTicket = useCallback((ticket: Ticket) => {
+    if (!ticket.desk) return;
+
+    const context = audioContext.current;
+    if (context) {
+      void context.resume();
+      [0, 0.28].forEach((delay, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = index === 0 ? 660 : 880;
+        gain.gain.setValueAtTime(0.0001, context.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(
+          0.2,
+          context.currentTime + delay + 0.02
+        );
+        gain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          context.currentTime + delay + 0.22
+        );
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(context.currentTime + delay);
+        oscillator.stop(context.currentTime + delay + 0.24);
+      });
+    }
+
+    window.setTimeout(() => {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const spokenCode = ticket.code.split("").join(" ");
+      const message = new SpeechSynthesisUtterance(
+        `Senha ${spokenCode}. Dirija-se ao guichê ${ticket.desk}.`
+      );
+      message.lang = "pt-BR";
+      message.rate = 0.82;
+      message.pitch = 1;
+      message.volume = 1;
+      window.speechSynthesis.speak(message);
+    }, 700);
+  }, []);
+
+  useEffect(() => {
+    if (
+      initialMode !== "display" ||
+      !displaySound ||
+      !featuredTicket?.calledAt
+    ) {
+      return;
+    }
+    const callKey = `${featuredTicket.id}-${featuredTicket.calledAt}`;
+    if (announcedCall.current === callKey) return;
+    announcedCall.current = callKey;
+    announceTicket(featuredTicket);
+  }, [announceTicket, displaySound, featuredTicket, initialMode]);
+
+  function enableDisplaySound() {
+    if (!audioContext.current) {
+      audioContext.current = new AudioContext();
+    }
+    setDisplaySound(true);
+    if (featuredTicket?.calledAt) {
+      announcedCall.current = `${featuredTicket.id}-${featuredTicket.calledAt}`;
+      announceTicket(featuredTicket);
+    }
+  }
+
+  function enterFullscreen() {
+    if (!document.fullscreenElement) {
+      void document.documentElement.requestFullscreen();
+    } else {
+      void document.exitFullscreen();
+    }
+  }
+
   return (
     <main className={`app-shell ${initialMode}`}>
-      <header className="topbar">
-        <Logo />
-        <ModeSwitch mode={initialMode} />
-        <div className="top-meta">
-          <span className="status-dot" />
-          <span>Sistema online</span>
-          <strong>
-            {now.toLocaleTimeString("pt-BR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </strong>
-        </div>
-      </header>
+      {initialMode === "display" ? (
+        <header className="display-header">
+          <Logo />
+          <div className="display-status">
+            <span className="status-dot" />
+            <span>Atendimento em funcionamento</span>
+          </div>
+          <div className="display-clock">
+            <span>
+              {now.toLocaleDateString("pt-BR", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+              })}
+            </span>
+            <strong>
+              {now.toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </strong>
+          </div>
+          <div className="display-controls">
+            <button
+              className={displaySound ? "sound-enabled" : ""}
+              disabled={displaySound}
+              onClick={enableDisplaySound}
+              type="button"
+            >
+              {displaySound ? "Som ativado ✓" : "Ativar som"}
+            </button>
+            <button onClick={enterFullscreen} type="button">
+              Tela cheia
+            </button>
+          </div>
+        </header>
+      ) : (
+        <header className="topbar">
+          <Logo />
+          <ModeSwitch mode={initialMode} />
+          <div className="top-meta">
+            <span className="status-dot" />
+            <span>Sistema online</span>
+            <strong>
+              {now.toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </strong>
+          </div>
+        </header>
+      )}
 
       {initialMode === "client" ? (
         <section className="client-content">
@@ -254,6 +386,84 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
             <i />
             <span>{queue.waiting} pessoas aguardando</span>
           </div>
+        </section>
+      ) : initialMode === "display" ? (
+        <section className="display-content">
+          <div className="display-main">
+            <div className="display-eyebrow">
+              <span />
+              Chamada atual
+              <span />
+            </div>
+            {featuredTicket ? (
+              <div
+                className="display-featured-call"
+                key={`${featuredTicket.id}-${featuredTicket.calledAt}`}
+              >
+                <span className="display-call-label">Senha</span>
+                <strong>{featuredTicket.code}</strong>
+                <p>{featuredTicket.service}</p>
+                {featuredTicket.priority ? (
+                  <em>Atendimento prioritário</em>
+                ) : null}
+                <div className="display-desk">
+                  <span>Dirija-se ao</span>
+                  <strong>
+                    Guichê {featuredTicket.desk?.toString().padStart(2, "0")}
+                  </strong>
+                </div>
+              </div>
+            ) : (
+              <div className="display-idle">
+                <span className="idle-mark">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <strong>Aguardando a próxima chamada</strong>
+                <p>Fique atento ao painel e ao aviso sonoro.</p>
+              </div>
+            )}
+          </div>
+
+          <aside className="display-sidebar">
+            <div className="previous-title">
+              <span>Últimas chamadas</span>
+              <small>Senha · Guichê</small>
+            </div>
+            <div className="previous-list">
+              {previousCalls.length ? (
+                previousCalls.map((ticket) => (
+                  <article key={`${ticket.id}-${ticket.calledAt}`}>
+                    <div>
+                      <strong>{ticket.code}</strong>
+                      <span>{ticket.service}</span>
+                    </div>
+                    <em>{ticket.desk?.toString().padStart(2, "0")}</em>
+                  </article>
+                ))
+              ) : (
+                <p>Nenhuma chamada anterior.</p>
+              )}
+            </div>
+
+            <div className="display-queue-info">
+              <small>Aguardando atendimento</small>
+              <strong>{queue.waiting.toString().padStart(2, "0")}</strong>
+              <span>
+                {queue.waiting === 1 ? "pessoa na fila" : "pessoas na fila"}
+              </span>
+            </div>
+          </aside>
+
+          <footer className="display-footer">
+            <span className="display-footer-mark">AS</span>
+            <p>
+              Tenha seus documentos em mãos. Ao ser chamado, dirija-se ao
+              guichê indicado.
+            </p>
+            <span>Atendimento com respeito e segurança</span>
+          </footer>
         </section>
       ) : (
         <section className="attendant-content">
