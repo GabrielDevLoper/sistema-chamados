@@ -12,3 +12,9 @@ export const tickets = sqliteTable("tickets", {
   calledAt: text("called_at"),
   finishedAt: text("finished_at"),
 });
+
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

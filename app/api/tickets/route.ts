@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { ensureQueueSchema, getD1, getDeskCount } from "../../../db/runtime";
 
 type TicketRow = {
   id: number;
@@ -11,36 +11,6 @@ type TicketRow = {
   called_at: string | null;
   finished_at: string | null;
 };
-
-function db() {
-  if (!env.DB) {
-    throw new Error("A fila ainda não está conectada ao banco de dados.");
-  }
-  return env.DB;
-}
-
-async function ensureSchema() {
-  const database = db();
-  await database.batch([
-    database
-      .prepare(
-        `CREATE TABLE IF NOT EXISTS tickets (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          code TEXT NOT NULL,
-          service TEXT NOT NULL,
-          priority INTEGER NOT NULL DEFAULT 0,
-          status TEXT NOT NULL DEFAULT 'waiting',
-          desk INTEGER,
-          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          called_at TEXT,
-          finished_at TEXT
-        )`
-      ),
-    database.prepare(
-      "CREATE INDEX IF NOT EXISTS tickets_queue_idx ON tickets(status, priority, created_at)"
-    ),
-  ]);
-}
 
 function mapTicket(ticket: TicketRow) {
   return {
@@ -62,8 +32,8 @@ function mapTicket(ticket: TicketRow) {
 
 export async function GET() {
   try {
-    await ensureSchema();
-    const database = db();
+    await ensureQueueSchema();
+    const database = getD1();
     const { results } = await database
       .prepare(
         `SELECT * FROM tickets
@@ -94,6 +64,7 @@ export async function GET() {
       waiting: stats?.waiting ?? 0,
       served: stats?.served ?? 0,
       averageMinutes: Math.max(0, Math.round(stats?.average_minutes ?? 0)),
+      deskCount: await getDeskCount(),
     });
   } catch (error) {
     return Response.json(
@@ -105,8 +76,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await ensureSchema();
-    const database = db();
+    await ensureQueueSchema();
+    const database = getD1();
     const payload = (await request.json()) as {
       action?: string;
       service?: string;
@@ -155,7 +126,8 @@ export async function POST(request: Request) {
 
     if (payload.action === "call_next") {
       const desk = Number(payload.desk);
-      if (!Number.isInteger(desk) || desk < 1 || desk > 99) {
+      const deskCount = await getDeskCount();
+      if (!Number.isInteger(desk) || desk < 1 || desk > deskCount) {
         return Response.json({ error: "Guichê inválido." }, { status: 400 });
       }
 

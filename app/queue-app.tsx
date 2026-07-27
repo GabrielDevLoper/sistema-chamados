@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type Mode = "client" | "attendant" | "display";
+type Mode = "client" | "attendant" | "display" | "admin";
 type Service = "Atendimento geral" | "Certidões" | "Registro e reconhecimento";
 type TicketStatus = "waiting" | "called" | "finished" | "no_show";
 
@@ -22,6 +22,7 @@ type QueuePayload = {
   waiting: number;
   served: number;
   averageMinutes: number;
+  deskCount: number;
 };
 
 const SERVICES: Array<{
@@ -55,6 +56,7 @@ const EMPTY_QUEUE: QueuePayload = {
   waiting: 0,
   served: 0,
   averageMinutes: 0,
+  deskCount: 4,
 };
 
 function formatTime(date: string | null) {
@@ -93,6 +95,9 @@ function ModeSwitch({ mode }: { mode: Mode }) {
       <a className={mode === "display" ? "active" : ""} href="/painel">
         Painel de chamadas
       </a>
+      <a className={mode === "admin" ? "active" : ""} href="/administrador">
+        Administração
+      </a>
     </nav>
   );
 }
@@ -107,8 +112,11 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(new Date());
   const [displaySound, setDisplaySound] = useState(false);
+  const [deskCountDraft, setDeskCountDraft] = useState(4);
+  const [savedMessage, setSavedMessage] = useState("");
   const announcedCall = useRef<string | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
+  const adminConfigLoaded = useRef(false);
 
   const loadQueue = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -134,6 +142,16 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
       window.clearInterval(clock);
     };
   }, [loadQueue]);
+
+  useEffect(() => {
+    if (!adminConfigLoaded.current && queue.deskCount) {
+      setDeskCountDraft(queue.deskCount);
+      adminConfigLoaded.current = true;
+    }
+    if (desk > queue.deskCount) {
+      setDesk(queue.deskCount);
+    }
+  }, [desk, queue.deskCount]);
 
   async function sendAction(payload: Record<string, unknown>) {
     setBusy(true);
@@ -161,6 +179,38 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   async function createTicket(service: Service) {
     const ticket = await sendAction({ action: "create", service, priority });
     if (ticket) setCreatedTicket(ticket);
+  }
+
+  async function saveDeskConfiguration() {
+    setBusy(true);
+    setSavedMessage("");
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ deskCount: deskCountDraft }),
+      });
+      const data = (await response.json()) as {
+        deskCount?: number;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error || "Não foi possível salvar a configuração.");
+      }
+      await loadQueue(true);
+      setSavedMessage(
+        `${data.deskCount} ${data.deskCount === 1 ? "guichê configurado" : "guichês configurados"} com sucesso.`
+      );
+      setError("");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível salvar a configuração."
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   const waitingTickets = useMemo(
@@ -194,6 +244,19 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   );
   const featuredTicket = calledTickets[0] ?? null;
   const previousCalls = calledTickets.slice(1, 5);
+  const deskOptions = useMemo(
+    () => Array.from({ length: queue.deskCount }, (_, index) => index + 1),
+    [queue.deskCount]
+  );
+  const activeDeskNumbers = useMemo(
+    () =>
+      new Set(
+        queue.tickets
+          .filter((ticket) => ticket.status === "called" && ticket.desk)
+          .map((ticket) => ticket.desk)
+      ),
+    [queue.tickets]
+  );
   const peopleAhead = createdTicket
     ? queue.tickets.filter(
         (ticket) =>
@@ -316,6 +379,136 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
             </button>
           </div>
         </header>
+      ) : initialMode === "admin" ? (
+        <>
+          <header className="topbar">
+            <Logo />
+            <ModeSwitch mode={initialMode} />
+            <div className="top-meta">
+              <span className="status-dot" />
+              <span>Sistema online</span>
+              <strong>
+                {now.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </strong>
+            </div>
+          </header>
+          <section className="admin-content">
+          <div className="admin-heading">
+            <p className="kicker">Configuração do sistema</p>
+            <h1>Administração</h1>
+            <p>
+              Defina quantos guichês estarão disponíveis para o atendimento do
+              cartório.
+            </p>
+          </div>
+
+          <div className="admin-grid">
+            <section className="admin-setting-card">
+              <div className="section-label">
+                <span />
+                Estrutura de atendimento
+              </div>
+              <h2>Quantidade de guichês</h2>
+              <p>
+                Essa configuração atualiza automaticamente a lista disponível
+                para todos os atendentes.
+              </p>
+
+              <div className="desk-counter">
+                <button
+                  aria-label="Diminuir quantidade de guichês"
+                  disabled={busy || deskCountDraft <= 1}
+                  onClick={() => setDeskCountDraft((value) => Math.max(1, value - 1))}
+                  type="button"
+                >
+                  −
+                </button>
+                <label>
+                  <span>Guichês</span>
+                  <input
+                    aria-label="Quantidade de guichês"
+                    max={50}
+                    min={1}
+                    onChange={(event) =>
+                      setDeskCountDraft(
+                        Math.min(50, Math.max(1, Number(event.target.value) || 1))
+                      )
+                    }
+                    type="number"
+                    value={deskCountDraft}
+                  />
+                </label>
+                <button
+                  aria-label="Aumentar quantidade de guichês"
+                  disabled={busy || deskCountDraft >= 50}
+                  onClick={() => setDeskCountDraft((value) => Math.min(50, value + 1))}
+                  type="button"
+                >
+                  +
+                </button>
+              </div>
+
+              <div className="admin-range-note">
+                Mínimo de 1 e máximo de 50 guichês.
+              </div>
+              <button
+                className="admin-save-button"
+                disabled={busy || deskCountDraft === queue.deskCount}
+                onClick={saveDeskConfiguration}
+                type="button"
+              >
+                {busy ? "Salvando…" : "Salvar configuração"}
+              </button>
+              {savedMessage ? (
+                <p className="admin-success" role="status">
+                  ✓ {savedMessage}
+                </p>
+              ) : null}
+            </section>
+
+            <section className="admin-preview-card">
+              <div className="admin-preview-header">
+                <div>
+                  <small>Configuração atual</small>
+                  <strong>
+                    {queue.deskCount.toString().padStart(2, "0")} guichês
+                  </strong>
+                </div>
+                <span>
+                  <i /> Sistema sincronizado
+                </span>
+              </div>
+              <div className="desk-preview-grid">
+                {Array.from({ length: deskCountDraft }, (_, index) => index + 1).map(
+                  (number) => (
+                    <article
+                      className={activeDeskNumbers.has(number) ? "active" : ""}
+                      key={number}
+                    >
+                      <span>Guichê</span>
+                      <strong>{number.toString().padStart(2, "0")}</strong>
+                      <small>
+                        {activeDeskNumbers.has(number) ? "Em atendimento" : "Disponível"}
+                      </small>
+                    </article>
+                  )
+                )}
+              </div>
+              <div className="admin-help">
+                <strong>Como funciona?</strong>
+                <p>
+                  Após salvar, os atendentes verão somente os guichês ativos no
+                  seletor. O painel da TV continuará indicando normalmente o
+                  guichê de cada chamada.
+                </p>
+              </div>
+            </section>
+          </div>
+          </section>
+        </>
       ) : (
         <header className="topbar">
           <Logo />
@@ -465,7 +658,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
             <span>Atendimento com respeito e segurança</span>
           </footer>
         </section>
-      ) : (
+      ) : initialMode === "admin" ? null : (
         <section className="attendant-content">
           <aside className="attendant-sidebar">
             <div>
@@ -481,7 +674,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
                 onChange={(event) => setDesk(Number(event.target.value))}
                 value={desk}
               >
-                {[1, 2, 3, 4].map((number) => (
+                {deskOptions.map((number) => (
                   <option key={number} value={number}>
                     Guichê {number.toString().padStart(2, "0")}
                   </option>
