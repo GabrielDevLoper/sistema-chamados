@@ -59,25 +59,47 @@ const EMPTY_QUEUE: QueuePayload = {
   deskCount: 4,
 };
 
+const TIME_ZONE = "America/Maceio";
+const CLOCK_TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: TIME_ZONE,
+});
+const DISPLAY_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "long",
+  day: "2-digit",
+  month: "long",
+  timeZone: TIME_ZONE,
+});
+
 function formatTime(date: string | null) {
   if (!date) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   }).format(new Date(date));
+}
+
+function formatClockTime(date: Date | null) {
+  return date ? CLOCK_TIME_FORMATTER.format(date) : "--:--";
+}
+
+function formatDisplayDate(date: Date | null) {
+  return date ? DISPLAY_DATE_FORMATTER.format(date) : "Carregando data…";
 }
 
 function Logo() {
   return (
-    <div className="brand" aria-label="Cartório Alta Serra">
+    <div className="brand" aria-label="Cartório">
       <span className="brand-mark" aria-hidden="true">
         <i />
         <i />
         <i />
       </span>
       <span>
-        <strong>Alta Serra</strong>
-        <small>Cartório &amp; Registro Civil</small>
+        <strong>Cartório</strong>
+        <small>Registro Civil</small>
       </span>
     </div>
   );
@@ -110,7 +132,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   const [priority, setPriority] = useState(false);
   const [desk, setDesk] = useState(1);
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
   const [displaySound, setDisplaySound] = useState(false);
   const [deskCountDraft, setDeskCountDraft] = useState(4);
   const [savedMessage, setSavedMessage] = useState("");
@@ -125,6 +147,9 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
       const data = (await response.json()) as QueuePayload & { error?: string };
       if (!response.ok) throw new Error(data.error || "Não foi possível carregar a fila.");
       setQueue(data);
+      setDesk((currentDesk) =>
+        Math.min(currentDesk, Math.max(1, data.deskCount))
+      );
       setError("");
     } catch {
       setError("Não foi possível conectar à fila. Tente novamente.");
@@ -134,10 +159,14 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   }, []);
 
   useEffect(() => {
-    loadQueue();
+    const updateClock = () => setNow(new Date());
+    const initialLoad = window.setTimeout(() => loadQueue(), 0);
+    const initialClock = window.setTimeout(updateClock, 0);
     const refresh = window.setInterval(() => loadQueue(true), 3500);
-    const clock = window.setInterval(() => setNow(new Date()), 30000);
+    const clock = window.setInterval(updateClock, 30000);
     return () => {
+      window.clearTimeout(initialLoad);
+      window.clearTimeout(initialClock);
       window.clearInterval(refresh);
       window.clearInterval(clock);
     };
@@ -148,10 +177,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
       setDeskCountDraft(queue.deskCount);
       adminConfigLoaded.current = true;
     }
-    if (desk > queue.deskCount) {
-      setDesk(queue.deskCount);
-    }
-  }, [desk, queue.deskCount]);
+  }, [queue.deskCount]);
 
   async function sendAction(payload: Record<string, unknown>) {
     setBusy(true);
@@ -351,19 +377,8 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
             <span>Atendimento em funcionamento</span>
           </div>
           <div className="display-clock">
-            <span>
-              {now.toLocaleDateString("pt-BR", {
-                weekday: "long",
-                day: "2-digit",
-                month: "long",
-              })}
-            </span>
-            <strong>
-              {now.toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </strong>
+            <span>{formatDisplayDate(now)}</span>
+            <strong>{formatClockTime(now)}</strong>
           </div>
           <div className="display-controls">
             <button
@@ -387,12 +402,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
             <div className="top-meta">
               <span className="status-dot" />
               <span>Sistema online</span>
-              <strong>
-                {now.toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </strong>
+              <strong>{formatClockTime(now)}</strong>
             </div>
           </header>
           <section className="admin-content">
@@ -516,12 +526,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
           <div className="top-meta">
             <span className="status-dot" />
             <span>Sistema online</span>
-            <strong>
-              {now.toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </strong>
+            <strong>{formatClockTime(now)}</strong>
           </div>
         </header>
       )}
@@ -529,7 +534,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
       {initialMode === "client" ? (
         <section className="client-content">
           <div className="client-heading">
-            <p className="kicker">Bem-vindo ao Cartório Alta Serra</p>
+            <p className="kicker">Bem-vindo ao Cartório</p>
             <h1>Como podemos ajudar?</h1>
             <p>Toque em uma opção abaixo para retirar sua senha.</p>
           </div>
@@ -650,7 +655,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
           </aside>
 
           <footer className="display-footer">
-            <span className="display-footer-mark">AS</span>
+            <span className="display-footer-mark">CR</span>
             <p>
               Tenha seus documentos em mãos. Ao ser chamado, dirija-se ao
               guichê indicado.

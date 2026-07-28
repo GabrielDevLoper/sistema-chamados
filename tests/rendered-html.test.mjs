@@ -25,6 +25,8 @@ test("entrega as quatro telas do sistema", async () => {
   assert.match(queueApp, /Ativar som/);
   assert.match(queueApp, /Quantidade de guichês/);
   assert.match(queueApp, /deskOptions/);
+  assert.match(queueApp, /Bem-vindo ao Cartório/);
+  assert.doesNotMatch(queueApp, /Alta Serra/);
 });
 
 test("mantém fila persistente e remove o conteúdo temporário", async () => {
@@ -44,4 +46,13 @@ test("mantém fila persistente e remove o conteúdo temporário", async () => {
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   await assert.rejects(access(new URL("app/_sites-preview", root)));
   await access(new URL("dist/server/index.js", root));
+});
+
+test("mantém o relógio determinístico durante a hidratação", async () => {
+  const queueApp = await readFile(new URL("app/queue-app.tsx", root), "utf8");
+
+  assert.match(queueApp, /useState<Date \| null>\(null\)/);
+  assert.match(queueApp, /const updateClock = \(\) => setNow\(new Date\(\)\)/);
+  assert.match(queueApp, /timeZone: TIME_ZONE/);
+  assert.doesNotMatch(queueApp, /useState\(new Date\(\)\)/);
 });

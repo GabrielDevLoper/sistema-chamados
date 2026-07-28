@@ -26,24 +26,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const image = new URL("/og.png", `${protocol}://${host}`).toString();
 
   return {
-    title: "Fila Alta Serra | Atendimento",
+    title: "Cartório | Atendimento",
     description:
-      "Sistema de senhas e atendimento do Cartório Alta Serra.",
+      "Sistema de senhas e atendimento do cartório.",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
-      title: "Alta Serra | Atendimento simples. Fila organizada.",
+      title: "Cartório | Atendimento simples. Fila organizada.",
       description:
         "Retirada de senhas e gestão de atendimento em uma fila integrada.",
-      images: [{ url: image, width: 1734, height: 907 }],
+      images: [{ url: image, width: 1731, height: 909 }],
       locale: "pt_BR",
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: "Alta Serra | Atendimento simples. Fila organizada.",
+      title: "Cartório | Atendimento simples. Fila organizada.",
       description:
         "Retirada de senhas e gestão de atendimento em uma fila integrada.",
       images: [image],
