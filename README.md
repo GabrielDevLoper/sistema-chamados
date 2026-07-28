@@ -6,6 +6,11 @@ Sistema de senhas para cartório com três telas integradas:
 - `/atendente`: controle da fila e dos guichês;
 - `/painel`: painel de chamadas para a TV.
 
+## Planejamento
+
+O plano de evolução para uma plataforma multiorganização está documentado em
+[docs/PLANO-IMPLEMENTACAO-MULTIORGANIZACAO.md](docs/PLANO-IMPLEMENTACAO-MULTIORGANIZACAO.md).
+
 ## Pré-requisito
 
 Instale o **Node.js 22 LTS** ou uma versão igual ou superior a `22.13.0`.
