@@ -77,7 +77,7 @@ async function derivePassword(password: string, salt: Uint8Array, iterations: nu
 }
 
 export function validatePassword(password: string) {
-  if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
+  if (password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres.");
   if (password.length > 128) throw new Error("A senha deve ter no máximo 128 caracteres.");
 }
 

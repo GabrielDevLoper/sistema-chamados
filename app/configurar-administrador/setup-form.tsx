@@ -30,7 +30,7 @@ export function SetupForm() {
       <label><span>Código de configuração</span><input autoComplete="off" name="setupToken" required type="password" /></label>
       <label><span>Nome</span><input autoComplete="name" name="name" required /></label>
       <label><span>E-mail</span><input autoComplete="email" name="email" required type="email" /></label>
-      <label><span>Senha</span><input autoComplete="new-password" minLength={12} name="password" required type="password" /><small>Mínimo de 12 caracteres.</small></label>
+      <label><span>Senha</span><input autoComplete="new-password" minLength={6} name="password" required type="password" /><small>Mínimo de 6 caracteres.</small></label>
       <button className="primary-button" disabled={busy} type="submit">{busy ? "Configurando…" : "Criar administrador"}</button>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
     </form>

@@ -106,8 +106,8 @@ export function OrganizationForm({
         </label>
         <label>
           <span>{editing && organization?.accountEmail ? "Nova senha (opcional)" : "Senha inicial"}</span>
-          <input autoComplete="new-password" minLength={12} name="accountPassword" required={!editing || !organization?.accountEmail} type="password" />
-          <small>Mínimo de 12 caracteres.</small>
+          <input autoComplete="new-password" minLength={6} name="accountPassword" required={!editing || !organization?.accountEmail} type="password" />
+          <small>Mínimo de 6 caracteres, sem regras de complexidade.</small>
         </label>
         <label>
           <span>E-mail de acesso</span>

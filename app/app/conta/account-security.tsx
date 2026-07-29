@@ -36,7 +36,7 @@ export function AccountSecurity() {
         <h2>Alterar senha</h2>
         <p>A troca encerra todas as sessões, inclusive esta.</p>
         <label><span>Senha atual</span><input autoComplete="current-password" name="currentPassword" required type="password" /></label>
-        <label><span>Nova senha</span><input autoComplete="new-password" minLength={12} name="newPassword" required type="password" /></label>
+        <label><span>Nova senha</span><input autoComplete="new-password" minLength={6} name="newPassword" required type="password" /><small>Mínimo de 6 caracteres.</small></label>
         <button className="primary-button" disabled={busy}>Alterar senha</button>
         {error ? <p className="form-error" role="alert">{error}</p> : null}
       </form>

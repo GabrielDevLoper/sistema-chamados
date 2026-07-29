@@ -54,6 +54,7 @@ test("protege contas com JWT, hash de senha e sessão revogável", async () => {
   assert.match(auth, /new SignJWT/);
   assert.match(auth, /jwtVerify/);
   assert.match(auth, /PBKDF2_ITERATIONS = 600_000/);
+  assert.match(auth, /password\.length < 6/);
   assert.match(auth, /HttpOnly; SameSite=Strict/);
   assert.match(auth, /sessions\.revoked_at IS NULL/);
   assert.match(login, /failed_login_attempts/);
