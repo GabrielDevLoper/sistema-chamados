@@ -171,7 +171,6 @@ export const desks = sqliteTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     sectorId: integer("sector_id")
-      .notNull()
       .references(() => sectors.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     number: integer("number").notNull(),

@@ -33,40 +33,31 @@ SELECT `sectors`.`id`, `services`.`id`
 FROM `sectors`
 INNER JOIN `services` ON `services`.`organization_id` = `sectors`.`organization_id`;
 --> statement-breakpoint
-PRAGMA foreign_keys=OFF;
+ALTER TABLE `desks` ADD `sector_id` integer REFERENCES sectors(id);
 --> statement-breakpoint
-CREATE TABLE `__new_desks` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`organization_id` integer NOT NULL,
-	`sector_id` integer NOT NULL,
-	`name` text NOT NULL,
-	`number` integer NOT NULL,
-	`active` integer DEFAULT true NOT NULL,
-	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	FOREIGN KEY (`organization_id`) REFERENCES `organizations`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`sector_id`) REFERENCES `sectors`(`id`) ON UPDATE no action ON DELETE restrict
+UPDATE `desks`
+SET `sector_id` = (
+	SELECT `sectors`.`id`
+	FROM `sectors`
+	WHERE `sectors`.`organization_id` = `desks`.`organization_id`
+	ORDER BY `sectors`.`sort_order` ASC, `sectors`.`id` ASC
+	LIMIT 1
 );
 --> statement-breakpoint
-INSERT INTO `__new_desks` (
-	`id`, `organization_id`, `sector_id`, `name`, `number`, `active`, `created_at`, `updated_at`
-)
-SELECT
-	`desks`.`id`, `desks`.`organization_id`, `sectors`.`id`, `desks`.`name`,
-	`desks`.`number`, `desks`.`active`, `desks`.`created_at`, `desks`.`updated_at`
-FROM `desks`
-INNER JOIN `sectors` ON `sectors`.`organization_id` = `desks`.`organization_id`;
---> statement-breakpoint
-DROP TABLE `desks`;
---> statement-breakpoint
-ALTER TABLE `__new_desks` RENAME TO `desks`;
---> statement-breakpoint
-PRAGMA foreign_keys=ON;
---> statement-breakpoint
-CREATE UNIQUE INDEX `desks_org_number_unique` ON `desks` (`organization_id`,`number`);
---> statement-breakpoint
-CREATE INDEX `desks_org_active_idx` ON `desks` (`organization_id`,`active`);
---> statement-breakpoint
 CREATE INDEX `desks_org_sector_active_idx` ON `desks` (`organization_id`,`sector_id`,`active`);
+--> statement-breakpoint
+CREATE TRIGGER `desks_sector_required_insert`
+BEFORE INSERT ON `desks`
+WHEN NEW.`sector_id` IS NULL
+BEGIN
+	SELECT RAISE(ABORT, 'O setor do guichê é obrigatório');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `desks_sector_required_update`
+BEFORE UPDATE OF `sector_id` ON `desks`
+WHEN NEW.`sector_id` IS NULL
+BEGIN
+	SELECT RAISE(ABORT, 'O setor do guichê é obrigatório');
+END;
 --> statement-breakpoint
 ALTER TABLE `tickets` ADD `sector_id` integer REFERENCES sectors(id);

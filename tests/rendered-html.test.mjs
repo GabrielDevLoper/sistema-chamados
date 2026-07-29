@@ -44,7 +44,7 @@ test("usa migrations versionadas e isolamento multiorganização", async () => {
 
 test("organiza guichês por setores e limita os serviços elegíveis", async () => {
   const [migration, schema, queue, management, sectorsRoute] = await Promise.all([
-    readFile(new URL("drizzle/0003_high_vision.sql", root), "utf8"),
+    readFile(new URL("drizzle/0003_warm_the_stranger.sql", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("db/queue.ts", root), "utf8"),
     readFile(new URL("app/app/management.tsx", root), "utf8"),

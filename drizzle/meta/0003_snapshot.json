@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b60ff931-1608-4c3b-b390-c1d7234d7098",
+  "id": "d5660e0d-445a-4e07-b16f-e3cf1942ae23",
   "prevId": "84b31c09-e3ad-4f99-a29a-8e69cdae5cfb",
   "tables": {
     "account_tokens": {
@@ -218,7 +218,7 @@
           "name": "sector_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "name": {

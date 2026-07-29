@@ -43,6 +43,14 @@ Execute:
 npm run dev
 ```
 
+Antes de iniciar o servidor, o projeto aplica automaticamente as migrations no
+D1 local. Bancos locais criados antes do versionamento de migrations são
+reconhecidos e preservados. Para executar somente essa atualização, use:
+
+```bash
+npm run db:migrate:local
+```
+
 Na primeira instalação, acesse `/configurar-administrador`, informe o valor de
 `ADMIN_SETUP_TOKEN` e crie o administrador. Esse cadastro só funciona enquanto
 não existir nenhum usuário com o perfil `platform_admin`.
