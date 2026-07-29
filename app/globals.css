@@ -1138,10 +1138,11 @@ input:focus-visible {
 
 .desk-select select {
   appearance: none;
-  background: #204b47;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--brand-primary) 72%, var(--brand-deep));
+  border: 1px solid var(--brand-muted);
   border-radius: 7px;
-  color: white;
+  box-shadow: 0 10px 24px var(--brand-glow);
+  color: var(--brand-on-strong);
   cursor: pointer;
   padding: 14px;
 }

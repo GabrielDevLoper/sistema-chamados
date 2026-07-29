@@ -120,6 +120,8 @@ test("deriva uma paleta acessível da cor primária da organização", async () 
   assert.match(queueApp, /brandThemeStyle\(queue\.organization\.primaryColor\)/);
   assert.match(styles, /linear-gradient\(135deg, var\(--brand-strong\)/);
   assert.match(styles, /\.brand-preview/);
+  assert.match(styles, /\.desk-select select[\s\S]*var\(--brand-primary\)/);
+  assert.doesNotMatch(styles, /#204b47/i);
 });
 
 test("gera o artefato de produção", async () => {
