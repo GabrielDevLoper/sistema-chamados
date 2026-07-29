@@ -1,5 +1,5 @@
 import { assertSameOrigin, AuthenticationError } from "../../../../../db/auth";
-import { updateSector } from "../../../../../db/organization-settings";
+import { deleteSector, updateSector } from "../../../../../db/organization-settings";
 import { databaseErrorMessage } from "../../../../../db/runtime";
 import { authorizeOrganization } from "../../../../organization-auth";
 
@@ -27,5 +27,22 @@ export async function PUT(request: Request, context: RouteContext) {
       },
       { status: message.includes("UNIQUE constraint") ? 409 : 400 }
     );
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  try {
+    assertSameOrigin(request);
+    const { organization } = await authorizeOrganization(request);
+    const { id } = await context.params;
+    const sectorId = Number(id);
+    if (!Number.isInteger(sectorId)) throw new Error("Setor inválido.");
+    await deleteSector(organization.id, sectorId);
+    return Response.json({ ok: true });
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
+    return Response.json({ error: databaseErrorMessage(error) }, { status: 400 });
   }
 }

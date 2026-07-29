@@ -122,6 +122,46 @@ export async function updateService(
   if (!result) throw new Error("Serviço não encontrado.");
 }
 
+export async function deleteService(organizationId: number, serviceId: number) {
+  const database = getD1();
+  const service = await database
+    .prepare("SELECT id FROM services WHERE id = ? AND organization_id = ? LIMIT 1")
+    .bind(serviceId, organizationId)
+    .first<{ id: number }>();
+  if (!service) throw new Error("Serviço não encontrado.");
+  const openTicket = await database
+    .prepare(
+      `SELECT id FROM tickets
+       WHERE organization_id = ? AND service_id = ?
+         AND status IN ('waiting', 'called') LIMIT 1`
+    )
+    .bind(organizationId, serviceId)
+    .first();
+  if (openTicket) {
+    throw new Error("Conclua as senhas aguardando ou em atendimento antes de excluir o serviço.");
+  }
+  await database.batch([
+    database
+      .prepare(
+        `UPDATE tickets SET service_id = NULL
+         WHERE organization_id = ? AND service_id = ?
+           AND status NOT IN ('waiting', 'called')`
+      )
+      .bind(organizationId, serviceId),
+    database
+      .prepare(
+        `DELETE FROM sector_services
+         WHERE service_id = ? AND sector_id IN (
+           SELECT id FROM sectors WHERE organization_id = ?
+         )`
+      )
+      .bind(serviceId, organizationId),
+    database
+      .prepare("DELETE FROM services WHERE id = ? AND organization_id = ?")
+      .bind(serviceId, organizationId),
+  ]);
+}
+
 export async function createSector(
   organizationId: number,
   input: { name?: unknown; description?: unknown; serviceIds?: unknown }
@@ -261,6 +301,56 @@ export async function updateSector(
   ]);
 }
 
+export async function deleteSector(organizationId: number, sectorId: number) {
+  const database = getD1();
+  const sector = await database
+    .prepare("SELECT id FROM sectors WHERE id = ? AND organization_id = ? LIMIT 1")
+    .bind(sectorId, organizationId)
+    .first<{ id: number }>();
+  if (!sector) throw new Error("Setor não encontrado.");
+  const desk = await database
+    .prepare(
+      `SELECT id FROM desks
+       WHERE organization_id = ? AND sector_id = ? LIMIT 1`
+    )
+    .bind(organizationId, sectorId)
+    .first();
+  if (desk) throw new Error("Mova ou exclua os guichês deste setor antes de excluí-lo.");
+  const uncoveredService = await database
+    .prepare(
+      `SELECT services.name
+       FROM services
+       INNER JOIN sector_services target
+         ON target.service_id = services.id AND target.sector_id = ?
+       WHERE services.organization_id = ? AND services.active = 1
+         AND NOT EXISTS (
+           SELECT 1 FROM sector_services other
+           INNER JOIN sectors ON sectors.id = other.sector_id
+           WHERE other.service_id = services.id
+             AND other.sector_id <> ? AND sectors.active = 1
+         )
+       LIMIT 1`
+    )
+    .bind(sectorId, organizationId, sectorId)
+    .first<{ name: string }>();
+  if (uncoveredService) {
+    throw new Error(
+      `Vincule o serviço “${uncoveredService.name}” a outro setor ativo antes de excluir este setor.`
+    );
+  }
+  await database.batch([
+    database
+      .prepare("UPDATE tickets SET sector_id = NULL WHERE organization_id = ? AND sector_id = ?")
+      .bind(organizationId, sectorId),
+    database
+      .prepare("DELETE FROM sector_services WHERE sector_id = ?")
+      .bind(sectorId),
+    database
+      .prepare("DELETE FROM sectors WHERE id = ? AND organization_id = ?")
+      .bind(sectorId, organizationId),
+  ]);
+}
+
 export async function createDesk(
   organizationId: number,
   input: { name?: unknown; number?: unknown; sectorId?: unknown }
@@ -322,6 +412,34 @@ export async function updateDesk(
     .bind(name, number, sectorId, active ? 1 : 0, deskId, organizationId)
     .first<{ id: number }>();
   if (!result) throw new Error("Guichê não encontrado.");
+}
+
+export async function deleteDesk(organizationId: number, deskId: number) {
+  const database = getD1();
+  const desk = await database
+    .prepare("SELECT id FROM desks WHERE id = ? AND organization_id = ? LIMIT 1")
+    .bind(deskId, organizationId)
+    .first<{ id: number }>();
+  if (!desk) throw new Error("Guichê não encontrado.");
+  const current = await database
+    .prepare(
+      `SELECT id FROM tickets
+       WHERE organization_id = ? AND desk_id = ? AND status = 'called' LIMIT 1`
+    )
+    .bind(organizationId, deskId)
+    .first();
+  if (current) throw new Error("Finalize o atendimento deste guichê antes de excluí-lo.");
+  await database.batch([
+    database
+      .prepare(
+        `UPDATE tickets SET desk_id = NULL
+         WHERE organization_id = ? AND desk_id = ? AND status <> 'called'`
+      )
+      .bind(organizationId, deskId),
+    database
+      .prepare("DELETE FROM desks WHERE id = ? AND organization_id = ?")
+      .bind(deskId, organizationId),
+  ]);
 }
 
 export async function updateBranding(

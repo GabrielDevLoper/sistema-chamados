@@ -222,6 +222,7 @@ export const tickets = sqliteTable(
     sectorId: integer("sector_id").references(() => sectors.id, {
       onDelete: "restrict",
     }),
+    sector: text("sector"),
     serviceDate: text("service_date"),
     sequenceNumber: integer("sequence_number").notNull().default(0),
     code: text("code").notNull(),

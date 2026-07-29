@@ -17,6 +17,7 @@ Atualizado em 29 de julho de 2026.
 - cadastro de setores com relacionamento entre setores e serviços;
 - vínculo obrigatório de cada guichê a um setor;
 - chamada atômica limitada aos serviços permitidos no setor do guichê;
+- exclusão protegida de serviços, guichês e setores com preservação do histórico;
 - migração automática dos guichês e serviços existentes para Atendimento Geral;
 - rotas públicas por `slug`;
 - nome, cor, fuso e logo específicos por organização;

@@ -470,10 +470,6 @@ input:focus-visible {
   grid-template-columns: minmax(180px, 1fr) 100px minmax(180px, 1fr) 120px;
 }
 
-.desk-management-list form {
-  grid-template-columns: minmax(160px, 1fr) 90px minmax(180px, 1fr) 110px 90px;
-}
-
 .sector-create-form,
 .sector-management-form {
   background: rgba(23, 52, 48, 0.04);
@@ -568,6 +564,35 @@ input:focus-visible {
   justify-content: space-between;
 }
 
+.management-row-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.delete-button {
+  background: transparent;
+  border: 1px solid #e4b8b8;
+  border-radius: 12px;
+  color: #9a3030;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 44px;
+  padding: 0 13px;
+}
+
+.delete-button:hover {
+  background: #fff0f0;
+  border-color: #cf8585;
+}
+
+.delete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .inline-create-form {
   background: rgba(23, 52, 48, 0.04);
   border-radius: 16px;
@@ -583,8 +608,12 @@ input:focus-visible {
 
 .management-list form {
   border-top: 1px solid var(--line);
-  grid-template-columns: minmax(200px, 1fr) 110px 120px 90px;
+  grid-template-columns: minmax(200px, 1fr) 110px 120px 170px;
   padding-top: 12px;
+}
+
+.desk-management-list form {
+  grid-template-columns: minmax(160px, 1fr) 90px minmax(180px, 1fr) 110px 170px;
 }
 
 .compact-toggle {

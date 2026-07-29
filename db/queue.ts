@@ -14,6 +14,7 @@ type TicketRow = {
   service_id: number | null;
   desk_id: number | null;
   sector_id: number | null;
+  sector: string | null;
   sector_name?: string | null;
   code: string;
   service: string;
@@ -65,7 +66,7 @@ function mapTicket(row: TicketRow): Ticket {
     serviceId: row.service_id,
     deskId: row.desk_id,
     sectorId: row.sector_id,
-    sectorName: row.sector_name ?? null,
+    sectorName: row.sector_name ?? row.sector ?? null,
     code: row.code,
     service: row.service,
     priority: row.priority,
@@ -196,7 +197,7 @@ export async function getQueue(
   const [ticketResult, stats, services, sectors, desks] = await Promise.all([
     database
       .prepare(
-        `SELECT tickets.*, sectors.name AS sector_name
+        `SELECT tickets.*, COALESCE(tickets.sector, sectors.name) AS sector_name
          FROM tickets
          LEFT JOIN sectors ON sectors.id = tickets.sector_id
          WHERE tickets.organization_id = ? AND tickets.service_date = ?
@@ -346,7 +347,7 @@ export async function callNextTicket(input: {
 
   const current = await database
     .prepare(
-      `SELECT tickets.*, sectors.name AS sector_name
+      `SELECT tickets.*, COALESCE(tickets.sector, sectors.name) AS sector_name
        FROM tickets
        LEFT JOIN sectors ON sectors.id = tickets.sector_id
        WHERE tickets.organization_id = ? AND tickets.service_date = ?
@@ -364,6 +365,7 @@ export async function callNextTicket(input: {
          status = 'called',
          desk_id = ?,
          sector_id = ?,
+         sector = ?,
          desk = ?,
          called_at = CURRENT_TIMESTAMP
        WHERE id = (
@@ -380,6 +382,7 @@ export async function callNextTicket(input: {
     .bind(
       desk.id,
       desk.sector_id,
+      desk.sector_name,
       desk.number,
       input.organization.id,
       serviceDate,

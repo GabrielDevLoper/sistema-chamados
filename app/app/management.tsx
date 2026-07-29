@@ -29,7 +29,7 @@ export function OrganizationManagement({
   const [error, setError] = useState("");
   const [previewColor, setPreviewColor] = useState(organization.primaryColor);
 
-  async function request(path: string, method: "POST" | "PUT", payload: Record<string, unknown>) {
+  async function request(path: string, method: "POST" | "PUT" | "DELETE", payload: Record<string, unknown>) {
     setBusy(true);
     setError("");
     try {
@@ -45,6 +45,11 @@ export function OrganizationManagement({
       setError(requestError instanceof Error ? requestError.message : "Não foi possível salvar.");
       setBusy(false);
     }
+  }
+
+  async function remove(path: string, label: string) {
+    if (!window.confirm(`Excluir ${label}? Esta ação não poderá ser desfeita.`)) return;
+    await request(path, "DELETE", {});
   }
 
   function fields(formData: FormData) {
@@ -117,7 +122,18 @@ export function OrganizationManagement({
                 <input defaultValue={service.name} name="name" required />
                 <input defaultValue={service.ticketPrefix} maxLength={3} name="ticketPrefix" required />
                 <label className="compact-toggle"><input defaultChecked={service.active} name="active" type="checkbox" /><span>{service.active ? "Ativo" : "Inativo"}</span></label>
-                <button className="secondary-link" disabled={busy}>Salvar</button>
+                <div className="management-row-actions">
+                  <button className="secondary-link" disabled={busy}>Salvar</button>
+                  <button
+                    aria-label={`Excluir serviço ${service.name}`}
+                    className="delete-button"
+                    disabled={busy}
+                    onClick={() => remove(`/api/app/services/${service.id}`, `o serviço “${service.name}”`)}
+                    type="button"
+                  >
+                    Excluir
+                  </button>
+                </div>
               </form>
             ))}
           </div>
@@ -192,7 +208,18 @@ export function OrganizationManagement({
                     <input defaultChecked={sector.active} name="active" type="checkbox" />
                     <span>{sector.active ? "Setor ativo" : "Setor inativo"}</span>
                   </label>
-                  <button className="secondary-link" disabled={busy}>Salvar setor</button>
+                  <div className="management-row-actions">
+                    <button className="secondary-link" disabled={busy}>Salvar setor</button>
+                    <button
+                      aria-label={`Excluir setor ${sector.name}`}
+                      className="delete-button"
+                      disabled={busy}
+                      onClick={() => remove(`/api/app/sectors/${sector.id}`, `o setor “${sector.name}”`)}
+                      type="button"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               </form>
             ))}
@@ -223,7 +250,18 @@ export function OrganizationManagement({
                   ))}
                 </select>
                 <label className="compact-toggle"><input defaultChecked={desk.active} name="active" type="checkbox" /><span>{desk.active ? "Ativo" : "Inativo"}</span></label>
-                <button className="secondary-link" disabled={busy}>Salvar</button>
+                <div className="management-row-actions">
+                  <button className="secondary-link" disabled={busy}>Salvar</button>
+                  <button
+                    aria-label={`Excluir guichê ${desk.name}`}
+                    className="delete-button"
+                    disabled={busy}
+                    onClick={() => remove(`/api/app/desks/${desk.id}`, `o guichê “${desk.name}”`)}
+                    type="button"
+                  >
+                    Excluir
+                  </button>
+                </div>
               </form>
             ))}
           </div>

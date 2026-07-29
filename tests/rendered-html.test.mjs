@@ -43,23 +43,37 @@ test("usa migrations versionadas e isolamento multiorganização", async () => {
 });
 
 test("organiza guichês por setores e limita os serviços elegíveis", async () => {
-  const [migration, schema, queue, management, sectorsRoute] = await Promise.all([
+  const [migration, historyMigration, schema, queue, management, sectorsRoute, servicesRoute, desksRoute, settings] = await Promise.all([
     readFile(new URL("drizzle/0003_warm_the_stranger.sql", root), "utf8"),
+    readFile(new URL("drizzle/0004_cuddly_warbound.sql", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("db/queue.ts", root), "utf8"),
     readFile(new URL("app/app/management.tsx", root), "utf8"),
-    readFile(new URL("app/api/app/sectors/route.ts", root), "utf8"),
+    readFile(new URL("app/api/app/sectors/[id]/route.ts", root), "utf8"),
+    readFile(new URL("app/api/app/services/[id]/route.ts", root), "utf8"),
+    readFile(new URL("app/api/app/desks/[id]/route.ts", root), "utf8"),
+    readFile(new URL("db/organization-settings.ts", root), "utf8"),
   ]);
 
   assert.match(migration, /CREATE TABLE `sectors`/);
   assert.match(migration, /CREATE TABLE `sector_services`/);
   assert.match(migration, /Atendimento Geral/);
+  assert.match(historyMigration, /ADD `sector` text/);
+  assert.match(historyMigration, /UPDATE `tickets`/);
   assert.match(schema, /sectorId: integer\("sector_id"\)/);
   assert.match(queue, /SELECT service_id FROM sector_services WHERE sector_id = \?/);
   assert.match(queue, /sector_id = \?/);
   assert.match(management, /Serviços deste setor/);
   assert.match(management, /name="sectorId"/);
+  assert.match(management, /Esta ação não poderá ser desfeita/);
   assert.match(sectorsRoute, /authorizeOrganization\(request\)/);
+  assert.match(sectorsRoute, /export async function DELETE/);
+  assert.match(servicesRoute, /export async function DELETE/);
+  assert.match(desksRoute, /export async function DELETE/);
+  assert.match(settings, /UPDATE tickets SET service_id = NULL/);
+  assert.match(settings, /status NOT IN \('waiting', 'called'\)/);
+  assert.match(settings, /UPDATE tickets SET desk_id = NULL/);
+  assert.match(settings, /UPDATE tickets SET sector_id = NULL/);
 });
 
 test("protege contas com JWT, hash de senha e sessão revogável", async () => {
