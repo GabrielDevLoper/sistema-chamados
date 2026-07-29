@@ -107,6 +107,19 @@ test("mantém a hidratação determinística", async () => {
   assert.doesNotMatch(queueApp, /useState\(new Date\(\)\)/);
 });
 
+test("formata a ficha para bobina térmica de 80 mm", async () => {
+  const [queueApp, styles] = await Promise.all([
+    readFile(new URL("app/queue-app.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
+  ]);
+
+  assert.match(queueApp, /formatTicketDate/);
+  assert.match(queueApp, /ticket-print-date/);
+  assert.match(styles, /@page\s*{[\s\S]*size: 80mm 110mm/);
+  assert.match(styles, /\.app-shell > \*:not\(\.ticket-modal\)/);
+  assert.match(styles, /\.ticket-paper[\s\S]*width: 80mm/);
+});
+
 test("deriva uma paleta acessível da cor primária da organização", async () => {
   const [theme, queueApp, styles] = await Promise.all([
     readFile(new URL("app/brand-theme.ts", root), "utf8"),

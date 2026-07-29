@@ -62,6 +62,18 @@ function formatTime(date: string | null, timezone: string) {
   }).format(new Date(date));
 }
 
+function formatTicketDate(date: string, timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: timezone,
+  }).format(new Date(date));
+}
+
 function formatClockTime(date: Date | null, timezone: string) {
   return date
     ? new Intl.DateTimeFormat("pt-BR", {
@@ -974,6 +986,15 @@ export function QueueApp({
               ×
             </button>
             <Logo organization={queue.organization} />
+            <p className="ticket-print-date">
+              <span>Data/Hora</span>
+              <strong>
+                {formatTicketDate(
+                  createdTicket.createdAt,
+                  queue.organization.timezone
+                )}
+              </strong>
+            </p>
             <p>Sua senha é</p>
             <strong className="printed-code">{createdTicket.code}</strong>
             <span className="printed-service">{createdTicket.service}</span>
