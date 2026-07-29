@@ -66,13 +66,16 @@ export async function PUT(request: Request) {
         statements.push(
           database
             .prepare(
-              `INSERT INTO desks (organization_id, name, number)
-               VALUES (?, ?, ?)`
+              `INSERT INTO desks (organization_id, sector_id, name, number)
+               SELECT ?, id, ?, ? FROM sectors
+               WHERE organization_id = ? AND active = 1
+               ORDER BY sort_order ASC, id ASC LIMIT 1`
             )
             .bind(
               organization.id,
               `Guichê ${number.toString().padStart(2, "0")}`,
-              number
+              number,
+              organization.id
             )
         );
       }

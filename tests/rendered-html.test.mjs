@@ -42,6 +42,26 @@ test("usa migrations versionadas e isolamento multiorganização", async () => {
   assert.match(hosting, /"r2": "R2"/);
 });
 
+test("organiza guichês por setores e limita os serviços elegíveis", async () => {
+  const [migration, schema, queue, management, sectorsRoute] = await Promise.all([
+    readFile(new URL("drizzle/0003_high_vision.sql", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("db/queue.ts", root), "utf8"),
+    readFile(new URL("app/app/management.tsx", root), "utf8"),
+    readFile(new URL("app/api/app/sectors/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(migration, /CREATE TABLE `sectors`/);
+  assert.match(migration, /CREATE TABLE `sector_services`/);
+  assert.match(migration, /Atendimento Geral/);
+  assert.match(schema, /sectorId: integer\("sector_id"\)/);
+  assert.match(queue, /SELECT service_id FROM sector_services WHERE sector_id = \?/);
+  assert.match(queue, /sector_id = \?/);
+  assert.match(management, /Serviços deste setor/);
+  assert.match(management, /name="sectorId"/);
+  assert.match(sectorsRoute, /authorizeOrganization\(request\)/);
+});
+
 test("protege contas com JWT, hash de senha e sessão revogável", async () => {
   const [auth, login, platformRoute, privateTickets, developmentSeed] = await Promise.all([
     readFile(new URL("db/auth.ts", root), "utf8"),

@@ -344,13 +344,22 @@ input:focus-visible {
 .auth-form input,
 .branding-form input,
 .inline-create-form input,
-.management-list input {
+.management-list input,
+.sector-create-form input,
+.sector-management-form input,
+.inline-create-form select,
+.management-list select {
   background: white;
   border: 1px solid var(--line);
   border-radius: 11px;
   color: var(--ink);
   min-height: 46px;
   padding: 0 13px;
+}
+
+.inline-create-form select,
+.management-list select {
+  min-width: 0;
 }
 
 .organization-home-grid {
@@ -455,6 +464,108 @@ input:focus-visible {
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(200px, 1fr) 110px 120px;
+}
+
+.desk-create-form {
+  grid-template-columns: minmax(180px, 1fr) 100px minmax(180px, 1fr) 120px;
+}
+
+.desk-management-list form {
+  grid-template-columns: minmax(160px, 1fr) 90px minmax(180px, 1fr) 110px 90px;
+}
+
+.sector-create-form,
+.sector-management-form {
+  background: rgba(23, 52, 48, 0.04);
+  border-radius: 16px;
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+  padding: 18px;
+}
+
+.sector-create-form > label,
+.sector-form-heading > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sector-create-form > label > span,
+.sector-form-heading > label > span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sector-create-form {
+  grid-template-columns: 1fr 1fr;
+}
+
+.sector-create-form .service-checklist,
+.sector-create-form button {
+  grid-column: 1 / -1;
+}
+
+.sector-create-form button {
+  justify-self: end;
+}
+
+.sector-management-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sector-management-form {
+  background: white;
+  border: 1px solid var(--line);
+  margin: 0;
+}
+
+.sector-form-heading {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1.4fr;
+}
+
+.service-checklist {
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+}
+
+.service-checklist legend {
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.service-checklist label {
+  align-items: center;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-border);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 7px;
+  padding: 8px 11px;
+}
+
+.service-checklist input {
+  min-height: auto;
+  padding: 0;
+}
+
+.sector-form-actions {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
 }
 
 .inline-create-form {
@@ -618,7 +729,9 @@ input:focus-visible {
   }
 
   .inline-create-form,
-  .management-list form {
+  .management-list form,
+  .sector-create-form,
+  .sector-form-heading {
     align-items: stretch;
     grid-template-columns: 1fr;
   }
@@ -1002,6 +1115,36 @@ input:focus-visible {
   color: white;
   cursor: pointer;
   padding: 14px;
+}
+
+.desk-sector-summary {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: -24px 0 26px;
+  padding: 14px 16px;
+}
+
+.desk-sector-summary small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.desk-sector-summary strong {
+  color: white;
+  font-size: 15px;
+}
+
+.desk-sector-summary span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .queue-stats {

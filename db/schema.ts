@@ -123,6 +123,46 @@ export const services = sqliteTable(
   ]
 );
 
+export const sectors = sqliteTable(
+  "sectors",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    organizationId: integer("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("sectors_org_name_unique").on(table.organizationId, table.name),
+    index("sectors_org_active_sort_idx").on(
+      table.organizationId,
+      table.active,
+      table.sortOrder
+    ),
+  ]
+);
+
+export const sectorServices = sqliteTable(
+  "sector_services",
+  {
+    sectorId: integer("sector_id")
+      .notNull()
+      .references(() => sectors.id, { onDelete: "cascade" }),
+    serviceId: integer("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sectorId, table.serviceId] }),
+    index("sector_services_service_idx").on(table.serviceId),
+  ]
+);
+
 export const desks = sqliteTable(
   "desks",
   {
@@ -130,6 +170,9 @@ export const desks = sqliteTable(
     organizationId: integer("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    sectorId: integer("sector_id")
+      .notNull()
+      .references(() => sectors.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     number: integer("number").notNull(),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
@@ -142,6 +185,11 @@ export const desks = sqliteTable(
       table.number
     ),
     index("desks_org_active_idx").on(table.organizationId, table.active),
+    index("desks_org_sector_active_idx").on(
+      table.organizationId,
+      table.sectorId,
+      table.active
+    ),
   ]
 );
 
@@ -170,6 +218,9 @@ export const tickets = sqliteTable(
       onDelete: "restrict",
     }),
     deskId: integer("desk_id").references(() => desks.id, {
+      onDelete: "restrict",
+    }),
+    sectorId: integer("sector_id").references(() => sectors.id, {
       onDelete: "restrict",
     }),
     serviceDate: text("service_date"),

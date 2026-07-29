@@ -3,6 +3,7 @@ import type {
   Organization,
   QueueDesk,
   QueuePayload,
+  QueueSector,
   QueueService,
   Ticket,
 } from "./types";
@@ -12,6 +13,8 @@ type TicketRow = {
   organization_id: number;
   service_id: number | null;
   desk_id: number | null;
+  sector_id: number | null;
+  sector_name?: string | null;
   code: string;
   service: string;
   priority: number;
@@ -32,10 +35,28 @@ type ServiceRow = {
 
 type DeskRow = {
   id: number;
+  sector_id: number;
+  sector_name: string;
+  service_ids: string | null;
   name: string;
   number: number;
   active: number;
 };
+
+type SectorRow = {
+  id: number;
+  name: string;
+  description: string;
+  active: number;
+  sort_order: number;
+  service_ids: string | null;
+};
+
+function parseIds(value: string | null): number[] {
+  return value
+    ? value.split(",").map(Number).filter((id) => Number.isInteger(id))
+    : [];
+}
 
 function mapTicket(row: TicketRow): Ticket {
   return {
@@ -43,6 +64,8 @@ function mapTicket(row: TicketRow): Ticket {
     organizationId: row.organization_id,
     serviceId: row.service_id,
     deskId: row.desk_id,
+    sectorId: row.sector_id,
+    sectorName: row.sector_name ?? null,
     code: row.code,
     service: row.service,
     priority: row.priority,
@@ -71,9 +94,23 @@ function mapService(row: ServiceRow): QueueService {
 function mapDesk(row: DeskRow): QueueDesk {
   return {
     id: row.id,
+    sectorId: row.sector_id,
+    sectorName: row.sector_name,
+    serviceIds: parseIds(row.service_ids),
     name: row.name,
     number: row.number,
     active: Boolean(row.active),
+  };
+}
+
+function mapSector(row: SectorRow): QueueSector {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    active: Boolean(row.active),
+    sortOrder: row.sort_order,
+    serviceIds: parseIds(row.service_ids),
   };
 }
 
@@ -111,14 +148,44 @@ export async function listDesks(
 ): Promise<QueueDesk[]> {
   const { results } = await getD1()
     .prepare(
-      `SELECT id, name, number, active
+      `SELECT
+         desks.id, desks.sector_id, sectors.name AS sector_name,
+         desks.name, desks.number, desks.active,
+         GROUP_CONCAT(sector_services.service_id) AS service_ids
        FROM desks
-       WHERE organization_id = ? ${options.includeInactive ? "" : "AND active = 1"}
-       ORDER BY number ASC`
+       INNER JOIN sectors ON sectors.id = desks.sector_id
+         AND sectors.organization_id = desks.organization_id
+       LEFT JOIN sector_services ON sector_services.sector_id = sectors.id
+       WHERE desks.organization_id = ?
+         ${options.includeInactive ? "" : "AND desks.active = 1 AND sectors.active = 1"}
+       GROUP BY desks.id
+       ORDER BY desks.number ASC`
     )
     .bind(organizationId)
     .all<DeskRow>();
   return results.map(mapDesk);
+}
+
+export async function listSectors(
+  organizationId: number,
+  options: { includeInactive?: boolean } = {}
+): Promise<QueueSector[]> {
+  const { results } = await getD1()
+    .prepare(
+      `SELECT
+         sectors.id, sectors.name, sectors.description, sectors.active,
+         sectors.sort_order,
+         GROUP_CONCAT(sector_services.service_id) AS service_ids
+       FROM sectors
+       LEFT JOIN sector_services ON sector_services.sector_id = sectors.id
+       WHERE sectors.organization_id = ?
+         ${options.includeInactive ? "" : "AND sectors.active = 1"}
+       GROUP BY sectors.id
+       ORDER BY sectors.sort_order ASC, sectors.name ASC`
+    )
+    .bind(organizationId)
+    .all<SectorRow>();
+  return results.map(mapSector);
 }
 
 export async function getQueue(
@@ -126,16 +193,18 @@ export async function getQueue(
 ): Promise<QueuePayload> {
   const database = getD1();
   const serviceDate = serviceDateForTimezone(organization.timezone);
-  const [ticketResult, stats, services, desks] = await Promise.all([
+  const [ticketResult, stats, services, sectors, desks] = await Promise.all([
     database
       .prepare(
-        `SELECT * FROM tickets
-         WHERE organization_id = ? AND service_date = ?
+        `SELECT tickets.*, sectors.name AS sector_name
+         FROM tickets
+         LEFT JOIN sectors ON sectors.id = tickets.sector_id
+         WHERE tickets.organization_id = ? AND tickets.service_date = ?
          ORDER BY
-           CASE status WHEN 'called' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END,
-           CASE WHEN status = 'waiting' THEN priority ELSE 0 END DESC,
-           created_at ASC,
-           id ASC`
+           CASE tickets.status WHEN 'called' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END,
+           CASE WHEN tickets.status = 'waiting' THEN tickets.priority ELSE 0 END DESC,
+           tickets.created_at ASC,
+           tickets.id ASC`
       )
       .bind(organization.id, serviceDate)
       .all<TicketRow>(),
@@ -158,6 +227,7 @@ export async function getQueue(
         average_minutes: number | null;
       }>(),
     listServices(organization.id),
+    listSectors(organization.id),
     listDesks(organization.id),
   ]);
 
@@ -170,6 +240,7 @@ export async function getQueue(
       timezone: organization.timezone,
     },
     services,
+    sectors,
     desks,
     tickets: ticketResult.results.map(mapTicket),
     waiting: stats?.waiting ?? 0,
@@ -189,6 +260,13 @@ export async function createTicket(input: {
       `SELECT id, name, ticket_prefix, active, sort_order
        FROM services
        WHERE id = ? AND organization_id = ? AND active = 1
+         AND EXISTS (
+           SELECT 1 FROM sector_services
+           INNER JOIN sectors ON sectors.id = sector_services.sector_id
+           WHERE sector_services.service_id = services.id
+             AND sectors.organization_id = services.organization_id
+             AND sectors.active = 1
+         )
        LIMIT 1`
     )
     .bind(input.serviceId, input.organization.id)
@@ -250,9 +328,16 @@ export async function callNextTicket(input: {
   const serviceDate = serviceDateForTimezone(input.organization.timezone);
   const desk = await database
     .prepare(
-      `SELECT id, name, number, active
+      `SELECT
+         desks.id, desks.sector_id, sectors.name AS sector_name,
+         desks.name, desks.number, desks.active,
+         GROUP_CONCAT(sector_services.service_id) AS service_ids
        FROM desks
-       WHERE id = ? AND organization_id = ? AND active = 1
+       INNER JOIN sectors ON sectors.id = desks.sector_id
+         AND sectors.organization_id = desks.organization_id AND sectors.active = 1
+       LEFT JOIN sector_services ON sector_services.sector_id = sectors.id
+       WHERE desks.id = ? AND desks.organization_id = ? AND desks.active = 1
+       GROUP BY desks.id
        LIMIT 1`
     )
     .bind(input.deskId, input.organization.id)
@@ -261,9 +346,11 @@ export async function callNextTicket(input: {
 
   const current = await database
     .prepare(
-      `SELECT * FROM tickets
-       WHERE organization_id = ? AND service_date = ?
-         AND status = 'called' AND desk_id = ?
+      `SELECT tickets.*, sectors.name AS sector_name
+       FROM tickets
+       LEFT JOIN sectors ON sectors.id = tickets.sector_id
+       WHERE tickets.organization_id = ? AND tickets.service_date = ?
+         AND tickets.status = 'called' AND tickets.desk_id = ?
        LIMIT 1`
     )
     .bind(input.organization.id, serviceDate, desk.id)
@@ -276,11 +363,15 @@ export async function callNextTicket(input: {
        SET
          status = 'called',
          desk_id = ?,
+         sector_id = ?,
          desk = ?,
          called_at = CURRENT_TIMESTAMP
        WHERE id = (
          SELECT id FROM tickets
          WHERE organization_id = ? AND service_date = ? AND status = 'waiting'
+           AND service_id IN (
+             SELECT service_id FROM sector_services WHERE sector_id = ?
+           )
          ORDER BY priority DESC, created_at ASC, id ASC
          LIMIT 1
        ) AND organization_id = ? AND status = 'waiting'
@@ -288,14 +379,16 @@ export async function callNextTicket(input: {
     )
     .bind(
       desk.id,
+      desk.sector_id,
       desk.number,
       input.organization.id,
       serviceDate,
+      desk.sector_id,
       input.organization.id
     )
     .first<TicketRow>();
   if (!called) throw new Error("Não há senhas aguardando.");
-  return mapTicket(called);
+  return { ...mapTicket(called), sectorName: desk.sector_name };
 }
 
 export async function updateTicketStatus(input: {

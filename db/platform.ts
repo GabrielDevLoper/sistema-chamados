@@ -182,6 +182,13 @@ export async function createOrganization(
         ),
       database
         .prepare(
+          `INSERT INTO sectors (
+            organization_id, name, description, sort_order
+          ) VALUES (?, 'Atendimento Geral', 'Setor padrão da organização', 1)`
+        )
+        .bind(organization.id),
+      database
+        .prepare(
           `INSERT INTO services (
             organization_id, name, ticket_prefix, sort_order
           ) VALUES (?, 'Atendimento geral', 'A', 1)`
@@ -189,10 +196,20 @@ export async function createOrganization(
         .bind(organization.id),
       database
         .prepare(
-          `INSERT INTO desks (organization_id, name, number)
-           VALUES (?, 'Guichê 01', 1)`
+          `INSERT INTO sector_services (sector_id, service_id)
+           SELECT sectors.id, services.id
+           FROM sectors, services
+           WHERE sectors.organization_id = ? AND services.organization_id = ?
+           ORDER BY sectors.id ASC, services.id ASC LIMIT 1`
         )
-        .bind(organization.id),
+        .bind(organization.id, organization.id),
+      database
+        .prepare(
+          `INSERT INTO desks (organization_id, sector_id, name, number)
+           SELECT ?, id, 'Guichê 01', 1 FROM sectors
+           WHERE organization_id = ? ORDER BY sort_order ASC, id ASC LIMIT 1`
+        )
+        .bind(organization.id, organization.id),
       database
         .prepare(
           `INSERT INTO audit_logs (

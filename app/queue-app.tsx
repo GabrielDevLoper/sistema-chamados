@@ -45,6 +45,7 @@ const DEFAULT_ORGANIZATION: PublicOrganization = {
 const EMPTY_QUEUE: QueuePayload = {
   organization: DEFAULT_ORGANIZATION,
   services: [],
+  sectors: [],
   desks: [],
   tickets: [],
   waiting: 0,
@@ -321,6 +322,26 @@ export function QueueApp({
   const waitingTickets = useMemo(
     () => queue.tickets.filter((ticket) => ticket.status === "waiting"),
     [queue.tickets]
+  );
+  const selectedDesk = useMemo(
+    () => queue.desks.find((desk) => desk.id === deskId) ?? null,
+    [queue.desks, deskId]
+  );
+  const eligibleWaitingTickets = useMemo(
+    () =>
+      waitingTickets.filter(
+        (ticket) =>
+          ticket.serviceId !== null &&
+          selectedDesk?.serviceIds.includes(ticket.serviceId)
+      ),
+    [selectedDesk, waitingTickets]
+  );
+  const eligibleServiceNames = useMemo(
+    () =>
+      queue.services
+        .filter((service) => selectedDesk?.serviceIds.includes(service.id))
+        .map((service) => service.name),
+    [queue.services, selectedDesk]
   );
   const currentTicket = useMemo(
     () =>
@@ -681,7 +702,10 @@ export function QueueApp({
               >
                 <span className="display-call-label">Senha</span>
                 <strong>{featuredTicket.code}</strong>
-                <p>{featuredTicket.service}</p>
+                <p>
+                  {featuredTicket.service}
+                  {featuredTicket.sectorName ? ` · ${featuredTicket.sectorName}` : ""}
+                </p>
                 {featuredTicket.priority ? (
                   <em>Atendimento prioritário</em>
                 ) : null}
@@ -776,11 +800,23 @@ export function QueueApp({
               </select>
             </label>
 
+            {selectedDesk ? (
+              <div className="desk-sector-summary">
+                <small>Setor do guichê</small>
+                <strong>{selectedDesk.sectorName}</strong>
+                <span>
+                  {eligibleServiceNames.length
+                    ? eligibleServiceNames.join(" · ")
+                    : "Nenhum serviço configurado"}
+                </span>
+              </div>
+            ) : null}
+
             <div className="queue-stats">
               <article>
                 <small>Aguardando</small>
-                <strong>{queue.waiting.toString().padStart(2, "0")}</strong>
-                <span>na fila agora</span>
+                <strong>{eligibleWaitingTickets.length.toString().padStart(2, "0")}</strong>
+                <span>compatíveis com o setor</span>
               </article>
               <article>
                 <small>Atendidos hoje</small>
@@ -807,7 +843,10 @@ export function QueueApp({
                     <div>
                       <small>Senha</small>
                       <strong>{currentTicket.code}</strong>
-                      <span>{currentTicket.service}</span>
+                      <span>
+                        {currentTicket.service}
+                        {currentTicket.sectorName ? ` · ${currentTicket.sectorName}` : ""}
+                      </span>
                     </div>
                     <div className="called-at">
                       <small>Chamado às</small>
@@ -850,11 +889,11 @@ export function QueueApp({
                   </div>
                   <button
                     className="primary-button"
-                    disabled={busy || waitingTickets.length === 0 || !deskId}
+                    disabled={busy || eligibleWaitingTickets.length === 0 || !deskId}
                     onClick={() => sendAction({ action: "call_next", deskId })}
                     type="button"
                   >
-                    {waitingTickets.length ? "Chamar próxima senha →" : "Fila vazia"}
+                    {eligibleWaitingTickets.length ? "Chamar próxima senha →" : "Fila do setor vazia"}
                   </button>
                 </div>
               )}
@@ -881,8 +920,8 @@ export function QueueApp({
               <div className="queue-list">
                 {loading ? (
                   <p className="queue-empty">Atualizando a fila…</p>
-                ) : waitingTickets.length ? (
-                  waitingTickets.slice(0, 6).map((ticket, index) => (
+                ) : eligibleWaitingTickets.length ? (
+                  eligibleWaitingTickets.slice(0, 6).map((ticket, index) => (
                     <article className="queue-item" key={ticket.id}>
                       <span className="position">{index + 1}</span>
                       <div className="ticket-code">
@@ -896,7 +935,7 @@ export function QueueApp({
                     </article>
                   ))
                 ) : (
-                  <p className="queue-empty">Nenhuma senha aguardando no momento.</p>
+                  <p className="queue-empty">Nenhuma senha compatível com este setor.</p>
                 )}
               </div>
             </section>

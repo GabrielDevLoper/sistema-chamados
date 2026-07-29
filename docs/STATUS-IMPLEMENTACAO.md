@@ -14,12 +14,16 @@ Atualizado em 29 de julho de 2026.
 - uma conta de acesso por organização, com senha inicial definida pelo admin;
 - encerramento de sessões ao suspender a organização ou trocar a senha;
 - painel da organização para serviços, guichês, identidade, conta e operação;
+- cadastro de setores com relacionamento entre setores e serviços;
+- vínculo obrigatório de cada guichê a um setor;
+- chamada atômica limitada aos serviços permitidos no setor do guichê;
+- migração automática dos guichês e serviços existentes para Atendimento Geral;
 - rotas públicas por `slug`;
 - nome, cor, fuso e logo específicos por organização;
 - armazenamento de logos no R2 com validação de tipo, tamanho e dimensões;
 - persistência local da escolha de guichê após a hidratação;
 - auditoria das alterações de organização;
-- testes estáticos de arquitetura, segurança e hidratação, além do build.
+- testes estáticos de arquitetura, segurança, setores e hidratação, além do build.
 
 ## Próximas evoluções
 

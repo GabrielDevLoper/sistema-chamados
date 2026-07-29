@@ -2,20 +2,27 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Organization, QueueDesk, QueueService } from "../../db/types";
+import type {
+  Organization,
+  QueueDesk,
+  QueueSector,
+  QueueService,
+} from "../../db/types";
 import { brandThemeStyle } from "../brand-theme";
 
-type Section = "services" | "desks" | "branding";
+type Section = "services" | "sectors" | "desks" | "branding";
 
 export function OrganizationManagement({
   section,
   organization,
   services,
+  sectors,
   desks,
 }: {
   section: Section;
   organization: Organization;
   services: QueueService[];
+  sectors: QueueSector[];
   desks: QueueDesk[];
 }) {
   const [busy, setBusy] = useState(false);
@@ -42,6 +49,13 @@ export function OrganizationManagement({
 
   function fields(formData: FormData) {
     return Object.fromEntries(formData.entries());
+  }
+
+  function sectorFields(formData: FormData) {
+    return {
+      ...fields(formData),
+      serviceIds: formData.getAll("serviceIds").map(Number),
+    };
   }
 
   async function saveBranding(formData: FormData) {
@@ -84,6 +98,7 @@ export function OrganizationManagement({
       </header>
       <nav className="management-tabs">
         <Link className={section === "services" ? "active" : ""} href="/app/servicos">Serviços</Link>
+        <Link className={section === "sectors" ? "active" : ""} href="/app/setores">Setores</Link>
         <Link className={section === "desks" ? "active" : ""} href="/app/guiches">Guichês</Link>
         <Link className={section === "branding" ? "active" : ""} href="/app/identidade">Identidade</Link>
       </nav>
@@ -107,19 +122,106 @@ export function OrganizationManagement({
             ))}
           </div>
         </section>
+      ) : section === "sectors" ? (
+        <section className="management-card">
+          <div className="management-title">
+            <div>
+              <h2>Setores</h2>
+              <p>Agrupe os serviços que cada conjunto de guichês pode atender.</p>
+            </div>
+          </div>
+          <form
+            action={(data) => request("/api/app/sectors", "POST", sectorFields(data))}
+            className="sector-create-form"
+          >
+            <label>
+              <span>Nome do setor</span>
+              <input name="name" placeholder="Ex.: Reconhecimento de firma" required />
+            </label>
+            <label>
+              <span>Descrição</span>
+              <input name="description" placeholder="Orientação opcional para a equipe" />
+            </label>
+            <fieldset className="service-checklist">
+              <legend>Serviços atendidos</legend>
+              {services.filter((service) => service.active).map((service) => (
+                <label key={service.id}>
+                  <input name="serviceIds" type="checkbox" value={service.id} />
+                  <span>{service.name}</span>
+                </label>
+              ))}
+            </fieldset>
+            <button className="primary-button" disabled={busy}>Adicionar setor</button>
+          </form>
+          <div className="sector-management-list">
+            {sectors.map((sector) => (
+              <form
+                action={(data) => request(`/api/app/sectors/${sector.id}`, "PUT", {
+                  ...sectorFields(data),
+                  active: data.get("active") === "on",
+                })}
+                className="sector-management-form"
+                key={sector.id}
+              >
+                <div className="sector-form-heading">
+                  <label>
+                    <span>Nome do setor</span>
+                    <input defaultValue={sector.name} name="name" required />
+                  </label>
+                  <label>
+                    <span>Descrição</span>
+                    <input defaultValue={sector.description} name="description" />
+                  </label>
+                </div>
+                <fieldset className="service-checklist">
+                  <legend>Serviços deste setor</legend>
+                  {services.map((service) => (
+                    <label key={service.id}>
+                      <input
+                        defaultChecked={sector.serviceIds.includes(service.id)}
+                        name="serviceIds"
+                        type="checkbox"
+                        value={service.id}
+                      />
+                      <span>{service.name}{service.active ? "" : " (inativo)"}</span>
+                    </label>
+                  ))}
+                </fieldset>
+                <div className="sector-form-actions">
+                  <label className="compact-toggle">
+                    <input defaultChecked={sector.active} name="active" type="checkbox" />
+                    <span>{sector.active ? "Setor ativo" : "Setor inativo"}</span>
+                  </label>
+                  <button className="secondary-link" disabled={busy}>Salvar setor</button>
+                </div>
+              </form>
+            ))}
+          </div>
+        </section>
       ) : section === "desks" ? (
         <section className="management-card">
-          <div className="management-title"><div><h2>Guichês</h2><p>Desative guichês sem apagar o histórico de chamadas.</p></div></div>
-          <form action={(data) => request("/api/app/desks", "POST", fields(data))} className="inline-create-form">
+          <div className="management-title"><div><h2>Guichês</h2><p>Defina o setor de cada balcão para limitar os serviços que ele recebe.</p></div></div>
+          <form action={(data) => request("/api/app/desks", "POST", fields(data))} className="inline-create-form desk-create-form">
             <input name="name" placeholder="Nome do guichê" required />
             <input min={1} name="number" placeholder="Número" required type="number" />
+            <select name="sectorId" required>
+              <option value="">Selecione o setor</option>
+              {sectors.filter((sector) => sector.active).map((sector) => (
+                <option key={sector.id} value={sector.id}>{sector.name}</option>
+              ))}
+            </select>
             <button className="primary-button" disabled={busy}>Adicionar</button>
           </form>
-          <div className="management-list">
+          <div className="management-list desk-management-list">
             {desks.map((desk) => (
               <form action={(data) => request(`/api/app/desks/${desk.id}`, "PUT", { ...fields(data), active: data.get("active") === "on" })} key={desk.id}>
                 <input defaultValue={desk.name} name="name" required />
                 <input defaultValue={desk.number} min={1} name="number" required type="number" />
+                <select defaultValue={desk.sectorId} name="sectorId" required>
+                  {sectors.filter((sector) => sector.active || sector.id === desk.sectorId).map((sector) => (
+                    <option key={sector.id} value={sector.id}>{sector.name}</option>
+                  ))}
+                </select>
                 <label className="compact-toggle"><input defaultChecked={desk.active} name="active" type="checkbox" /><span>{desk.active ? "Ativo" : "Inativo"}</span></label>
                 <button className="secondary-link" disabled={busy}>Salvar</button>
               </form>

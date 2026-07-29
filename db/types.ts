@@ -21,8 +21,20 @@ export type QueueService = {
   sortOrder: number;
 };
 
+export type QueueSector = {
+  id: number;
+  name: string;
+  description: string;
+  active: boolean;
+  sortOrder: number;
+  serviceIds: number[];
+};
+
 export type QueueDesk = {
   id: number;
+  sectorId: number;
+  sectorName: string;
+  serviceIds: number[];
   name: string;
   number: number;
   active: boolean;
@@ -35,6 +47,8 @@ export type Ticket = {
   organizationId: number;
   serviceId: number | null;
   deskId: number | null;
+  sectorId: number | null;
+  sectorName: string | null;
   code: string;
   service: string;
   priority: number;
@@ -51,6 +65,7 @@ export type QueuePayload = {
     "tradeName" | "slug" | "logoKey" | "primaryColor" | "timezone"
   >;
   services: QueueService[];
+  sectors: QueueSector[];
   desks: QueueDesk[];
   tickets: Ticket[];
   waiting: number;
