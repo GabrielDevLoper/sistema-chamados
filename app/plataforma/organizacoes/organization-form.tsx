@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { OrganizationSummary } from "../../../db/platform";
+import { brandThemeStyle } from "../../brand-theme";
 
 export function OrganizationForm({
   organization,
@@ -12,6 +13,9 @@ export function OrganizationForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [previewColor, setPreviewColor] = useState(
+    organization?.primaryColor ?? "#1F5B55"
+  );
   const editing = Boolean(organization);
 
   async function submit(formData: FormData) {
@@ -62,7 +66,11 @@ export function OrganizationForm({
   }
 
   return (
-    <form action={submit} className="platform-form">
+    <form
+      action={submit}
+      className="platform-form organization-themed-form"
+      style={brandThemeStyle(previewColor)}
+    >
       <div className="platform-form-grid">
         <label>
           <span>Nome fantasia</span>
@@ -94,7 +102,12 @@ export function OrganizationForm({
         </label>
         <label>
           <span>Cor primária</span>
-          <input defaultValue={organization?.primaryColor ?? "#1F5B55"} name="primaryColor" type="color" />
+          <input
+            name="primaryColor"
+            onChange={(event) => setPreviewColor(event.target.value)}
+            type="color"
+            value={previewColor}
+          />
         </label>
         <label>
           <span>Fuso horário</span>
@@ -118,6 +131,18 @@ export function OrganizationForm({
           <input accept="image/png,image/jpeg,image/webp" name="logo" type="file" />
           <small>PNG, JPEG ou WebP; até 2 MB e 2048 × 2048.</small>
         </label>
+      </div>
+      <div className="brand-preview compact">
+        <div>
+          <small>Prévia da identidade</small>
+          <strong>A001</strong>
+          <span>A cor será aplicada ao painel, totem e atendimento.</span>
+        </div>
+        <aside>
+          <small>Cor</small>
+          <i style={{ background: previewColor }} />
+          <strong>{previewColor.toUpperCase()}</strong>
+        </aside>
       </div>
       <div className="platform-form-actions">
         <Link className="secondary-link" href="/plataforma/organizacoes">Cancelar</Link>

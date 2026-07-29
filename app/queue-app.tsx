@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import Image from "next/image";
+import { brandThemeStyle } from "./brand-theme";
 import type {
   QueuePayload,
   QueueService,
@@ -445,12 +445,7 @@ export function QueueApp({
   return (
     <main
       className={`app-shell ${initialMode}`}
-      style={
-        {
-          "--deep": queue.organization.primaryColor,
-          "--green": queue.organization.primaryColor,
-        } as CSSProperties
-      }
+      style={brandThemeStyle(queue.organization.primaryColor)}
     >
       {initialMode === "display" ? (
         <header className="display-header">

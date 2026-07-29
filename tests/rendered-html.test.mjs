@@ -73,6 +73,21 @@ test("mantém a hidratação determinística", async () => {
   assert.doesNotMatch(queueApp, /useState\(new Date\(\)\)/);
 });
 
+test("deriva uma paleta acessível da cor primária da organização", async () => {
+  const [theme, queueApp, styles] = await Promise.all([
+    readFile(new URL("app/brand-theme.ts", root), "utf8"),
+    readFile(new URL("app/queue-app.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
+  ]);
+
+  assert.match(theme, /readableText/);
+  assert.match(theme, /--brand-on-primary/);
+  assert.match(theme, /--brand-strong/);
+  assert.match(queueApp, /brandThemeStyle\(queue\.organization\.primaryColor\)/);
+  assert.match(styles, /linear-gradient\(135deg, var\(--brand-strong\)/);
+  assert.match(styles, /\.brand-preview/);
+});
+
 test("gera o artefato de produção", async () => {
   await access(new URL("dist/server/index.js", root));
   await assert.rejects(access(new URL("app/_sites-preview", root)));

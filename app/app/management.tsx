@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Organization, QueueDesk, QueueService } from "../../db/types";
+import { brandThemeStyle } from "../brand-theme";
 
 type Section = "services" | "desks" | "branding";
 
@@ -19,6 +20,7 @@ export function OrganizationManagement({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [previewColor, setPreviewColor] = useState(organization.primaryColor);
 
   async function request(path: string, method: "POST" | "PUT", payload: Record<string, unknown>) {
     setBusy(true);
@@ -72,7 +74,10 @@ export function OrganizationManagement({
   }
 
   return (
-    <main className="platform-page narrow">
+    <main
+      className="platform-page organization-themed-page narrow"
+      style={brandThemeStyle(previewColor)}
+    >
       <header className="platform-header">
         <div><p className="kicker">Configurações</p><h1>{organization.tradeName}</h1><p>Personalize a estrutura usada pela sua equipe e pelos clientes.</p></div>
         <Link className="secondary-link" href="/app">Voltar ao painel</Link>
@@ -126,11 +131,23 @@ export function OrganizationManagement({
           <div className="management-title"><div><h2>Identidade visual</h2><p>As alterações aparecem nas telas públicas sem duplicar componentes.</p></div></div>
           <form action={saveBranding} className="branding-form">
             <label><span>Nome fantasia</span><input defaultValue={organization.tradeName} name="tradeName" required /></label>
-            <label><span>Cor primária</span><input defaultValue={organization.primaryColor} name="primaryColor" type="color" /></label>
+            <label><span>Cor primária</span><input name="primaryColor" onChange={(event) => setPreviewColor(event.target.value)} type="color" value={previewColor} /></label>
             <label><span>Fuso horário</span><input defaultValue={organization.timezone} name="timezone" required /></label>
             <label><span>Logo</span><input accept="image/png,image/jpeg,image/webp" name="logo" type="file" /></label>
             <button className="primary-button" disabled={busy}>Salvar identidade</button>
           </form>
+          <div className="brand-preview" aria-live="polite">
+            <div>
+              <small>Prévia do painel de chamadas</small>
+              <strong>A001</strong>
+              <span>Dirija-se ao Guichê 01</span>
+            </div>
+            <aside>
+              <small>Cor selecionada</small>
+              <i style={{ background: previewColor }} />
+              <strong>{previewColor.toUpperCase()}</strong>
+            </aside>
+          </div>
           <p className="storage-note">PNG, JPEG ou WebP; até 2 MB e 2048 × 2048 pixels.</p>
         </section>
       )}

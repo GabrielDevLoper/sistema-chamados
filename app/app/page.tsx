@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { requireOrganizationPage } from "../organization-auth";
 import { LogoutButton } from "../plataforma/logout-button";
+import { brandThemeStyle } from "../brand-theme";
 
 export default async function OrganizationHomePage() {
   const { user, organization } = await requireOrganizationPage("/app");
   return (
-    <main className="platform-page">
+    <main
+      className="platform-page organization-themed-page"
+      style={brandThemeStyle(organization.primaryColor)}
+    >
       <header className="platform-header">
         <div>
           <p className="kicker">Painel da organização</p>
