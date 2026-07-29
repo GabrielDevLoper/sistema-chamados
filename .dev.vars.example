@@ -1,0 +1,2 @@
+JWT_SECRET=gere-um-segredo-aleatorio-com-pelo-menos-32-caracteres
+ADMIN_SETUP_TOKEN=gere-outro-codigo-aleatorio-para-o-primeiro-administrador

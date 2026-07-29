@@ -1,5 +1,5 @@
-import { QueueApp } from "../queue-app";
+import { redirect } from "next/navigation";
 
 export default function AtendentePage() {
-  return <QueueApp initialMode="attendant" />;
+  redirect("/app/atendimento");
 }

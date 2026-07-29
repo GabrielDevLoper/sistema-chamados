@@ -1,5 +1,5 @@
-import { QueueApp } from "../queue-app";
+import { redirect } from "next/navigation";
 
 export default function ClientePage() {
-  return <QueueApp initialMode="client" />;
+  redirect("/fila/cartorio/cliente");
 }

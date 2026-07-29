@@ -1,12 +1,19 @@
-import { ensureQueueSchema, getD1, getDeskCount } from "../../../db/runtime";
+import { assertSameOrigin, AuthenticationError } from "../../../db/auth";
+import { authorizeOrganization } from "../../organization-auth";
+import { listDesks } from "../../../db/queue";
+import { databaseErrorMessage, getD1 } from "../../../db/runtime";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    await ensureQueueSchema();
-    return Response.json({ deskCount: await getDeskCount() });
+    const { organization } = await authorizeOrganization(request);
+    const desks = await listDesks(organization.id);
+    return Response.json({ deskCount: desks.length, desks });
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     return Response.json(
-      { error: error instanceof Error ? error.message : "Erro ao carregar a configuração." },
+      { error: databaseErrorMessage(error) },
       { status: 500 }
     );
   }
@@ -14,10 +21,10 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    await ensureQueueSchema();
+    assertSameOrigin(request);
+    const { organization } = await authorizeOrganization(request);
     const payload = (await request.json()) as { deskCount?: number };
     const deskCount = Number(payload.deskCount);
-
     if (!Number.isInteger(deskCount) || deskCount < 1 || deskCount > 50) {
       return Response.json(
         { error: "A quantidade deve estar entre 1 e 50 guichês." },
@@ -30,11 +37,10 @@ export async function PUT(request: Request) {
       .prepare(
         `SELECT GROUP_CONCAT(DISTINCT desk) AS desks
          FROM tickets
-         WHERE status = 'called' AND desk > ?`
+         WHERE organization_id = ? AND status = 'called' AND desk > ?`
       )
-      .bind(deskCount)
+      .bind(organization.id, deskCount)
       .first<{ desks: string | null }>();
-
     if (activeAboveLimit?.desks) {
       return Response.json(
         {
@@ -44,21 +50,49 @@ export async function PUT(request: Request) {
       );
     }
 
-    await database
-      .prepare(
-        `INSERT INTO settings (key, value, updated_at)
-         VALUES ('desk_count', ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(key) DO UPDATE SET
-           value = excluded.value,
-           updated_at = CURRENT_TIMESTAMP`
-      )
-      .bind(String(deskCount))
-      .run();
-
-    return Response.json({ deskCount });
+    const allDesks = await listDesks(organization.id, { includeInactive: true });
+    const statements: D1PreparedStatement[] = [];
+    for (let number = 1; number <= deskCount; number += 1) {
+      const existing = allDesks.find((desk) => desk.number === number);
+      if (existing) {
+        statements.push(
+          database
+            .prepare(
+              "UPDATE desks SET active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND organization_id = ?"
+            )
+            .bind(existing.id, organization.id)
+        );
+      } else {
+        statements.push(
+          database
+            .prepare(
+              `INSERT INTO desks (organization_id, name, number)
+               VALUES (?, ?, ?)`
+            )
+            .bind(
+              organization.id,
+              `Guichê ${number.toString().padStart(2, "0")}`,
+              number
+            )
+        );
+      }
+    }
+    statements.push(
+      database
+        .prepare(
+          `UPDATE desks SET active = 0, updated_at = CURRENT_TIMESTAMP
+           WHERE organization_id = ? AND number > ?`
+        )
+        .bind(organization.id, deskCount)
+    );
+    await database.batch(statements);
+    return Response.json({ deskCount, desks: await listDesks(organization.id) });
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     return Response.json(
-      { error: error instanceof Error ? error.message : "Erro ao salvar a configuração." },
+      { error: databaseErrorMessage(error) },
       { status: 500 }
     );
   }

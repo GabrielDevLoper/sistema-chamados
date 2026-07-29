@@ -1,5 +1,5 @@
-import { QueueApp } from "../queue-app";
+import { redirect } from "next/navigation";
 
 export default function PainelPage() {
-  return <QueueApp initialMode="display" />;
+  redirect("/fila/cartorio/painel");
 }

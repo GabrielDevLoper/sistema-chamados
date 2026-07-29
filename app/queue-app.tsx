@@ -1,136 +1,198 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import Image from "next/image";
+import type {
+  QueuePayload,
+  QueueService,
+  Ticket,
+} from "../db/types";
 
 type Mode = "client" | "attendant" | "display" | "admin";
-type Service = "Atendimento geral" | "Certidões" | "Registro e reconhecimento";
-type TicketStatus = "waiting" | "called" | "finished" | "no_show";
+type PublicOrganization = QueuePayload["organization"];
 
-type Ticket = {
-  id: number;
-  code: string;
-  service: Service;
-  priority: number;
-  status: TicketStatus;
-  desk: number | null;
-  createdAt: string;
-  calledAt: string | null;
-};
-
-type QueuePayload = {
-  tickets: Ticket[];
-  waiting: number;
-  served: number;
-  averageMinutes: number;
-  deskCount: number;
-};
-
-const SERVICES: Array<{
-  name: Service;
+const SERVICE_PRESENTATION: Record<string, {
   eyebrow: string;
   description: string;
   icon: string;
-}> = [
-  {
-    name: "Atendimento geral",
+}> = {
+  "Atendimento geral": {
     eyebrow: "Serviços diversos",
     description: "Dúvidas, orientações e outros serviços",
     icon: "A",
   },
-  {
-    name: "Certidões",
+  Certidões: {
     eyebrow: "2ª via e consultas",
     description: "Nascimento, casamento e óbito",
     icon: "C",
   },
-  {
-    name: "Registro e reconhecimento",
+  "Registro e reconhecimento": {
     eyebrow: "Documentos",
     description: "Firmas, autenticações e registros",
     icon: "R",
   },
-];
+};
+
+const DEFAULT_ORGANIZATION: PublicOrganization = {
+  tradeName: "Cartório",
+  slug: "cartorio",
+  logoKey: null,
+  primaryColor: "#1f5b55",
+  timezone: "America/Maceio",
+};
 
 const EMPTY_QUEUE: QueuePayload = {
+  organization: DEFAULT_ORGANIZATION,
+  services: [],
+  desks: [],
   tickets: [],
   waiting: 0,
   served: 0,
   averageMinutes: 0,
-  deskCount: 4,
 };
 
-const TIME_ZONE = "America/Maceio";
-const CLOCK_TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: TIME_ZONE,
-});
-const DISPLAY_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
-  weekday: "long",
-  day: "2-digit",
-  month: "long",
-  timeZone: TIME_ZONE,
-});
-
-function formatTime(date: string | null) {
+function formatTime(date: string | null, timezone: string) {
   if (!date) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: TIME_ZONE,
+    timeZone: timezone,
   }).format(new Date(date));
 }
 
-function formatClockTime(date: Date | null) {
-  return date ? CLOCK_TIME_FORMATTER.format(date) : "--:--";
+function formatClockTime(date: Date | null, timezone: string) {
+  return date
+    ? new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: timezone,
+      }).format(date)
+    : "--:--";
 }
 
-function formatDisplayDate(date: Date | null) {
-  return date ? DISPLAY_DATE_FORMATTER.format(date) : "Carregando data…";
+function formatDisplayDate(date: Date | null, timezone: string) {
+  return date
+    ? new Intl.DateTimeFormat("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        timeZone: timezone,
+      }).format(date)
+    : "Carregando data…";
 }
 
-function Logo() {
+function servicePresentation(service: QueueService) {
+  return SERVICE_PRESENTATION[service.name] ?? {
+    eyebrow: "Atendimento",
+    description: "Selecione para retirar uma senha",
+    icon: service.name.trim().charAt(0).toUpperCase() || "S",
+  };
+}
+
+function Logo({ organization }: { organization: PublicOrganization }) {
   return (
-    <div className="brand" aria-label="Cartório">
-      <span className="brand-mark" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
+    <div className="brand" aria-label={organization.tradeName}>
+      {organization.logoKey ? (
+        <Image
+          alt={`Logo da ${organization.tradeName}`}
+          className="brand-image"
+          height={44}
+          src={`/api/public/${encodeURIComponent(organization.slug)}/logo`}
+          unoptimized
+          width={52}
+        />
+      ) : (
+        <span className="brand-mark" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+      )}
       <span>
-        <strong>Cartório</strong>
-        <small>Registro Civil</small>
+        <strong>{organization.tradeName}</strong>
+        <small>Sistema de atendimento</small>
       </span>
     </div>
   );
 }
 
-function ModeSwitch({ mode }: { mode: Mode }) {
+function ModeSwitch({
+  mode,
+  organizationSlug,
+  authenticated,
+}: {
+  mode: Mode;
+  organizationSlug?: string;
+  authenticated?: boolean;
+}) {
+  const publicBase = organizationSlug
+    ? `/fila/${encodeURIComponent(organizationSlug)}`
+    : "";
   return (
     <nav className="mode-switch" aria-label="Selecionar tela">
-      <a className={mode === "client" ? "active" : ""} href="/cliente">
+      {authenticated ? (
+        <>
+          <a className={mode === "attendant" ? "active" : ""} href="/app/atendimento">
+            Atendimento
+          </a>
+          <a href={`/fila/${encodeURIComponent(organizationSlug ?? "")}/painel`}>
+            Painel público
+          </a>
+          <a className={mode === "admin" ? "active" : ""} href="/app/configuracoes">
+            Configurações
+          </a>
+        </>
+      ) : (
+        <>
+      <a
+        className={mode === "client" ? "active" : ""}
+        href={publicBase ? `${publicBase}/cliente` : "/cliente"}
+      >
         Retirar senha
       </a>
-      <a className={mode === "attendant" ? "active" : ""} href="/atendente">
-        Área do atendente
-      </a>
-      <a className={mode === "display" ? "active" : ""} href="/painel">
+      {!organizationSlug ? (
+        <a className={mode === "attendant" ? "active" : ""} href="/atendente">
+          Área do atendente
+        </a>
+      ) : null}
+      <a
+        className={mode === "display" ? "active" : ""}
+        href={publicBase ? `${publicBase}/painel` : "/painel"}
+      >
         Painel de chamadas
       </a>
-      <a className={mode === "admin" ? "active" : ""} href="/administrador">
-        Administração
-      </a>
+      {!organizationSlug ? (
+        <a className={mode === "admin" ? "active" : ""} href="/administrador">
+          Administração
+        </a>
+      ) : null}
+        </>
+      )}
     </nav>
   );
 }
 
-export function QueueApp({ initialMode }: { initialMode: Mode }) {
-  const [queue, setQueue] = useState<QueuePayload>(EMPTY_QUEUE);
+export function QueueApp({
+  initialMode,
+  organizationSlug,
+  initialOrganization,
+  authenticated = false,
+}: {
+  initialMode: Mode;
+  organizationSlug?: string;
+  initialOrganization?: PublicOrganization;
+  authenticated?: boolean;
+}) {
+  const [queue, setQueue] = useState<QueuePayload>(() => ({
+    ...EMPTY_QUEUE,
+    organization: initialOrganization ?? DEFAULT_ORGANIZATION,
+  }));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createdTicket, setCreatedTicket] = useState<Ticket | null>(null);
   const [priority, setPriority] = useState(false);
-  const [desk, setDesk] = useState(1);
+  const [deskId, setDeskId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   const [displaySound, setDisplaySound] = useState(false);
@@ -139,16 +201,33 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   const announcedCall = useRef<string | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const adminConfigLoaded = useRef(false);
+  const deskPreferenceLoaded = useRef(false);
+
+  const queueApiPath = authenticated
+    ? "/api/tickets"
+    : organizationSlug
+      ? `/api/public/${encodeURIComponent(organizationSlug)}/tickets`
+      : "/api/tickets";
 
   const loadQueue = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
     try {
-      const response = await fetch("/api/tickets", { cache: "no-store" });
+      const response = await fetch(queueApiPath, { cache: "no-store" });
       const data = (await response.json()) as QueuePayload & { error?: string };
       if (!response.ok) throw new Error(data.error || "Não foi possível carregar a fila.");
       setQueue(data);
-      setDesk((currentDesk) =>
-        Math.min(currentDesk, Math.max(1, data.deskCount))
+      const savedDesk =
+        initialMode === "attendant" && !deskPreferenceLoaded.current
+          ? Number(window.localStorage.getItem(`queue-desk:${data.organization.slug}`))
+          : null;
+      deskPreferenceLoaded.current = true;
+      setDeskId((currentDeskId) =>
+        data.desks.some((desk) => desk.id === savedDesk)
+          ? savedDesk
+          :
+        data.desks.some((desk) => desk.id === currentDeskId)
+          ? currentDeskId
+          : (data.desks[0]?.id ?? null)
       );
       setError("");
     } catch {
@@ -156,7 +235,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
     } finally {
       if (!quiet) setLoading(false);
     }
-  }, []);
+  }, [initialMode, queueApiPath]);
 
   useEffect(() => {
     const updateClock = () => setNow(new Date());
@@ -173,16 +252,16 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   }, [loadQueue]);
 
   useEffect(() => {
-    if (!adminConfigLoaded.current && queue.deskCount) {
-      setDeskCountDraft(queue.deskCount);
+    if (!adminConfigLoaded.current && queue.desks.length) {
+      setDeskCountDraft(queue.desks.length);
       adminConfigLoaded.current = true;
     }
-  }, [queue.deskCount]);
+  }, [queue.desks.length]);
 
   async function sendAction(payload: Record<string, unknown>) {
     setBusy(true);
     try {
-      const response = await fetch("/api/tickets", {
+      const response = await fetch(queueApiPath, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
@@ -202,8 +281,8 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
     }
   }
 
-  async function createTicket(service: Service) {
-    const ticket = await sendAction({ action: "create", service, priority });
+  async function createTicket(serviceId: number) {
+    const ticket = await sendAction({ action: "create", serviceId, priority });
     if (ticket) setCreatedTicket(ticket);
   }
 
@@ -246,9 +325,9 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   const currentTicket = useMemo(
     () =>
       queue.tickets.find(
-        (ticket) => ticket.status === "called" && ticket.desk === desk
+        (ticket) => ticket.status === "called" && ticket.deskId === deskId
       ) ?? null,
-    [queue.tickets, desk]
+    [queue.tickets, deskId]
   );
   const recentTickets = useMemo(
     () =>
@@ -270,10 +349,6 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   );
   const featuredTicket = calledTickets[0] ?? null;
   const previousCalls = calledTickets.slice(1, 5);
-  const deskOptions = useMemo(
-    () => Array.from({ length: queue.deskCount }, (_, index) => index + 1),
-    [queue.deskCount]
-  );
   const activeDeskNumbers = useMemo(
     () =>
       new Set(
@@ -368,17 +443,25 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
   }
 
   return (
-    <main className={`app-shell ${initialMode}`}>
+    <main
+      className={`app-shell ${initialMode}`}
+      style={
+        {
+          "--deep": queue.organization.primaryColor,
+          "--green": queue.organization.primaryColor,
+        } as CSSProperties
+      }
+    >
       {initialMode === "display" ? (
         <header className="display-header">
-          <Logo />
+          <Logo organization={queue.organization} />
           <div className="display-status">
             <span className="status-dot" />
             <span>Atendimento em funcionamento</span>
           </div>
           <div className="display-clock">
-            <span>{formatDisplayDate(now)}</span>
-            <strong>{formatClockTime(now)}</strong>
+            <span>{formatDisplayDate(now, queue.organization.timezone)}</span>
+            <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
           </div>
           <div className="display-controls">
             <button
@@ -397,12 +480,12 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
       ) : initialMode === "admin" ? (
         <>
           <header className="topbar">
-            <Logo />
-            <ModeSwitch mode={initialMode} />
+            <Logo organization={queue.organization} />
+            <ModeSwitch mode={initialMode} organizationSlug={organizationSlug} authenticated={authenticated} />
             <div className="top-meta">
               <span className="status-dot" />
               <span>Sistema online</span>
-              <strong>{formatClockTime(now)}</strong>
+              <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
             </div>
           </header>
           <section className="admin-content">
@@ -411,7 +494,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
             <h1>Administração</h1>
             <p>
               Defina quantos guichês estarão disponíveis para o atendimento do
-              cartório.
+              estabelecimento.
             </p>
           </div>
 
@@ -466,7 +549,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
               </div>
               <button
                 className="admin-save-button"
-                disabled={busy || deskCountDraft === queue.deskCount}
+                disabled={busy || deskCountDraft === queue.desks.length}
                 onClick={saveDeskConfiguration}
                 type="button"
               >
@@ -484,7 +567,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
                 <div>
                   <small>Configuração atual</small>
                   <strong>
-                    {queue.deskCount.toString().padStart(2, "0")} guichês
+                    {queue.desks.length.toString().padStart(2, "0")} guichês
                   </strong>
                 </div>
                 <span>
@@ -521,12 +604,12 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
         </>
       ) : (
         <header className="topbar">
-          <Logo />
-          <ModeSwitch mode={initialMode} />
+          <Logo organization={queue.organization} />
+          <ModeSwitch mode={initialMode} organizationSlug={organizationSlug} authenticated={authenticated} />
           <div className="top-meta">
             <span className="status-dot" />
             <span>Sistema online</span>
-            <strong>{formatClockTime(now)}</strong>
+            <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
           </div>
         </header>
       )}
@@ -534,31 +617,34 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
       {initialMode === "client" ? (
         <section className="client-content">
           <div className="client-heading">
-            <p className="kicker">Bem-vindo ao Cartório</p>
+            <p className="kicker">Bem-vindo à {queue.organization.tradeName}</p>
             <h1>Como podemos ajudar?</h1>
             <p>Toque em uma opção abaixo para retirar sua senha.</p>
           </div>
 
           <div className="service-grid">
-            {SERVICES.map((service) => (
-              <button
-                className="service-card"
-                disabled={busy}
-                key={service.name}
-                onClick={() => createTicket(service.name)}
-                type="button"
-              >
-                <span className="service-icon">{service.icon}</span>
-                <span className="service-copy">
-                  <small>{service.eyebrow}</small>
-                  <strong>{service.name}</strong>
-                  <span>{service.description}</span>
-                </span>
-                <span className="card-arrow" aria-hidden="true">
-                  →
-                </span>
-              </button>
-            ))}
+            {queue.services.map((service) => {
+              const presentation = servicePresentation(service);
+              return (
+                <button
+                  className="service-card"
+                  disabled={busy}
+                  key={service.id}
+                  onClick={() => createTicket(service.id)}
+                  type="button"
+                >
+                  <span className="service-icon">{presentation.icon}</span>
+                  <span className="service-copy">
+                    <small>{presentation.eyebrow}</small>
+                    <strong>{service.name}</strong>
+                    <span>{presentation.description}</span>
+                  </span>
+                  <span className="card-arrow" aria-hidden="true">
+                    →
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <label className="priority-toggle">
@@ -676,12 +762,20 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
               <span>Seu guichê</span>
               <select
                 aria-label="Seu guichê"
-                onChange={(event) => setDesk(Number(event.target.value))}
-                value={desk}
+                disabled={queue.desks.length === 0}
+                onChange={(event) => {
+                  const nextDeskId = Number(event.target.value);
+                  setDeskId(nextDeskId);
+                  window.localStorage.setItem(
+                    `queue-desk:${queue.organization.slug}`,
+                    String(nextDeskId)
+                  );
+                }}
+                value={deskId ?? ""}
               >
-                {deskOptions.map((number) => (
-                  <option key={number} value={number}>
-                    Guichê {number.toString().padStart(2, "0")}
+                {queue.desks.map((desk) => (
+                  <option key={desk.id} value={desk.id}>
+                    {desk.name}
                   </option>
                 ))}
               </select>
@@ -722,7 +816,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
                     </div>
                     <div className="called-at">
                       <small>Chamado às</small>
-                      <strong>{formatTime(currentTicket.calledAt)}</strong>
+                      <strong>{formatTime(currentTicket.calledAt, queue.organization.timezone)}</strong>
                     </div>
                   </div>
                   <div className="action-row">
@@ -761,8 +855,8 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
                   </div>
                   <button
                     className="primary-button"
-                    disabled={busy || waitingTickets.length === 0}
-                    onClick={() => sendAction({ action: "call_next", desk })}
+                    disabled={busy || waitingTickets.length === 0 || !deskId}
+                    onClick={() => sendAction({ action: "call_next", deskId })}
                     type="button"
                   >
                     {waitingTickets.length ? "Chamar próxima senha →" : "Fila vazia"}
@@ -801,7 +895,9 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
                         {ticket.priority ? <em>Prioritário</em> : null}
                       </div>
                       <span className="ticket-service">{ticket.service}</span>
-                      <span className="ticket-time">{formatTime(ticket.createdAt)}</span>
+                      <span className="ticket-time">
+                        {formatTime(ticket.createdAt, queue.organization.timezone)}
+                      </span>
                     </article>
                   ))
                 ) : (
@@ -843,7 +939,7 @@ export function QueueApp({ initialMode }: { initialMode: Mode }) {
             >
               ×
             </button>
-            <Logo />
+            <Logo organization={queue.organization} />
             <p>Sua senha é</p>
             <strong className="printed-code">{createdTicket.code}</strong>
             <span className="printed-service">{createdTicket.service}</span>

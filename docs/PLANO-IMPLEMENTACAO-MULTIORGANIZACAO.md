@@ -1,5 +1,10 @@
 # Plano de implementação — Sistema de filas multiorganização
 
+> Implementação iniciada em 29 de julho de 2026. O acompanhamento do que já foi
+> entregue e das evoluções restantes está em [STATUS-IMPLEMENTACAO.md](STATUS-IMPLEMENTACAO.md).
+> A decisão de autenticação foi atualizada: o sistema usa login próprio com JWT,
+> sem dependência da autenticação do ChatGPT.
+
 ## 1. Objetivo
 
 Evoluir o sistema atual de filas para uma plataforma que possa atender cartórios,
@@ -372,6 +377,10 @@ ticket_sequences(organization_id, service_date)
 ### Objetivo
 
 Criar acesso seguro para administradores e para a conta única da organização.
+
+Decisão aplicada: JWT `HS256` em cookie `HttpOnly`, sessão revogável no D1 e
+senhas protegidas com PBKDF2-HMAC-SHA256. O administrador define a senha inicial
+ao cadastrar a conta da organização.
 
 ### Implementação
 
