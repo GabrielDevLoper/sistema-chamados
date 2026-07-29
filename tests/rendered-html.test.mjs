@@ -43,11 +43,12 @@ test("usa migrations versionadas e isolamento multiorganização", async () => {
 });
 
 test("protege contas com JWT, hash de senha e sessão revogável", async () => {
-  const [auth, login, platformRoute, privateTickets] = await Promise.all([
+  const [auth, login, platformRoute, privateTickets, developmentSeed] = await Promise.all([
     readFile(new URL("db/auth.ts", root), "utf8"),
     readFile(new URL("db/login.ts", root), "utf8"),
     readFile(new URL("app/api/platform/organizations/route.ts", root), "utf8"),
     readFile(new URL("app/api/tickets/route.ts", root), "utf8"),
+    readFile(new URL("db/seeds/development-admin.sql", root), "utf8"),
   ]);
 
   assert.match(auth, /new SignJWT/);
@@ -59,6 +60,9 @@ test("protege contas com JWT, hash de senha e sessão revogável", async () => {
   assert.match(platformRoute, /authorizePlatformAdmin\(request\)/);
   assert.match(privateTickets, /authorizeOrganization\(request\)/);
   assert.doesNotMatch(auth, /ChatGPT|oai-authenticated/);
+  assert.match(developmentSeed, /adm@gmail\.com/);
+  assert.match(developmentSeed, /platform_admin/);
+  assert.match(developmentSeed, /ON CONFLICT\(email\) DO NOTHING/);
 });
 
 test("mantém a hidratação determinística", async () => {

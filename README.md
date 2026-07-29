@@ -47,6 +47,16 @@ Na primeira instalação, acesse `/configurar-administrador`, informe o valor de
 `ADMIN_SETUP_TOKEN` e crie o administrador. Esse cadastro só funciona enquanto
 não existir nenhum usuário com o perfil `platform_admin`.
 
+Para desenvolvimento, também existe um seed idempotente com a conta
+`adm@gmail.com` e senha `123456`:
+
+```bash
+npm run db:seed:admin
+```
+
+Essa credencial curta é somente local e o arquivo de seed não é incluído nas
+migrations automáticas de produção.
+
 ## Banco e migrations
 
 O schema fica em `db/schema.ts` e as migrations versionadas ficam em `drizzle/`.
