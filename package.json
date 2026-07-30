@@ -14,7 +14,9 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "node scripts/migrate-local.mjs",
-    "db:seed:admin": "node scripts/seed-admin.mjs"
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
+    "db:seed:admin": "node scripts/seed-admin.mjs",
+    "deploy:cloudflare": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

@@ -141,3 +141,22 @@ test("gera o artefato de produção", async () => {
   await access(new URL("dist/server/index.js", root));
   await assert.rejects(access(new URL("app/_sites-preview", root)));
 });
+
+test("configura os recursos de produção da Cloudflare", async () => {
+  const [wrangler, viteConfig, packageJson] = await Promise.all([
+    readFile(new URL("wrangler.jsonc", root), "utf8"),
+    readFile(new URL("vite.config.ts", root), "utf8"),
+    readFile(new URL("package.json", root), "utf8"),
+  ]);
+
+  assert.match(wrangler, /"name": "sistema-chamados"/);
+  assert.match(wrangler, /"binding": "DB"/);
+  assert.match(wrangler, /e1df1007-d0f7-4919-80cc-4dbb56a72e82/);
+  assert.match(wrangler, /"binding": "R2"/);
+  assert.match(wrangler, /"bucket_name": "sistema-chamados-logos-prod"/);
+  assert.match(wrangler, /"binding": "IMAGES"/);
+  assert.match(wrangler, /"migrations_dir": "drizzle"/);
+  assert.match(viteConfig, /configPath: "\.\/wrangler\.jsonc"/);
+  assert.match(packageJson, /"db:migrate:remote"/);
+  assert.match(packageJson, /"deploy:cloudflare"/);
+});

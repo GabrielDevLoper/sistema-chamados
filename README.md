@@ -79,6 +79,36 @@ publicação aplica as migrations ao D1 vinculado. Antes da primeira aplicação
 produção, faça um backup do D1. Migrations já aplicadas não devem ser editadas;
 uma correção deve ser feita em uma migration posterior.
 
+Para aplicar somente as migrations pendentes no D1 de produção configurado em
+`wrangler.jsonc`, autentique o Wrangler na conta correta da Cloudflare e execute:
+
+```bash
+npm run db:migrate:remote
+```
+
+## Publicação direta na Cloudflare
+
+O Worker de produção está configurado em `wrangler.jsonc` com os bindings:
+
+- `DB`: banco D1 `sistema-chamados-prod`;
+- `R2`: bucket `sistema-chamados-logos-prod`;
+- `IMAGES`: transformação de imagens do Worker.
+
+Ao importar o repositório no Cloudflare Workers Builds, use a branch `main`, o
+comando de build `npm run build` e o comando de deploy `npx wrangler deploy`.
+O nome do Worker no painel deve ser `sistema-chamados`.
+
+Depois de criar o Worker, cadastre `JWT_SECRET` e `ADMIN_SETUP_TOKEN` como
+Secrets em **Settings > Variables and Secrets**. Aplique as migrations remotas
+antes do primeiro acesso. Após criar o administrador em
+`/configurar-administrador`, remova `ADMIN_SETUP_TOKEN` e publique novamente.
+
+Também é possível publicar manualmente, depois de autenticar o Wrangler:
+
+```bash
+npm run deploy:cloudflare
+```
+
 ## Validação
 
 ```bash
