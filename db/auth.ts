@@ -25,7 +25,8 @@ const LOCAL_COOKIE_NAME = "queue_session";
 const JWT_ISSUER = "sistema-chamados";
 const JWT_AUDIENCE = "sistema-chamados-users";
 const SESSION_SECONDS = 60 * 60 * 12;
-const PBKDF2_ITERATIONS = 600_000;
+// Cloudflare Workers WebCrypto accepts at most 100,000 PBKDF2 iterations.
+const PBKDF2_ITERATIONS = 100_000;
 const encoder = new TextEncoder();
 
 type RuntimeSecrets = {
@@ -94,7 +95,7 @@ export async function verifyPassword(password: string, encodedHash: string) {
   if (
     algorithm !== "pbkdf2_sha256" ||
     !Number.isInteger(iterations) ||
-    iterations < 100_000 ||
+    iterations !== PBKDF2_ITERATIONS ||
     !rawSalt ||
     !rawHash
   ) {

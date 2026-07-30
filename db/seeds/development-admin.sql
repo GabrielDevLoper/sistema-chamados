@@ -1,5 +1,5 @@
 -- Seed exclusivo para desenvolvimento local.
--- Login: adm@gmail.com
+-- Login: velyondev@gmail.com
 -- Senha: 123456
 INSERT INTO users (
   name,
@@ -9,9 +9,9 @@ INSERT INTO users (
   status,
   password_changed_at
 ) VALUES (
-  'Administrador',
-  'adm@gmail.com',
-  'pbkdf2_sha256$600000$MsupqA0LGZ3dJsaoHGneoA$vOuSDIGT0JeNHI6BwEf35GzMHU081YJ9OlVcdj5y4Fo',
+  'Velyon ADM',
+  'velyondev@gmail.com',
+  'pbkdf2_sha256$100000$MsupqA0LGZ3dJsaoHGneoA$mFe2LcHRUEt1ezn7_oB4AzO9DH0Z4bnR8gAwlqB_9M4',
   'platform_admin',
   'active',
   CURRENT_TIMESTAMP

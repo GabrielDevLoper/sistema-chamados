@@ -87,7 +87,8 @@ test("protege contas com JWT, hash de senha e sessão revogável", async () => {
 
   assert.match(auth, /new SignJWT/);
   assert.match(auth, /jwtVerify/);
-  assert.match(auth, /PBKDF2_ITERATIONS = 600_000/);
+  assert.match(auth, /PBKDF2_ITERATIONS = 100_000/);
+  assert.match(auth, /iterations !== PBKDF2_ITERATIONS/);
   assert.match(auth, /password\.length < 6/);
   assert.match(auth, /HttpOnly; SameSite=Strict/);
   assert.match(auth, /sessions\.revoked_at IS NULL/);
@@ -95,8 +96,9 @@ test("protege contas com JWT, hash de senha e sessão revogável", async () => {
   assert.match(platformRoute, /authorizePlatformAdmin\(request\)/);
   assert.match(privateTickets, /authorizeOrganization\(request\)/);
   assert.doesNotMatch(auth, /ChatGPT|oai-authenticated/);
-  assert.match(developmentSeed, /adm@gmail\.com/);
+  assert.match(developmentSeed, /velyondev@gmail\.com/);
   assert.match(developmentSeed, /platform_admin/);
+  assert.match(developmentSeed, /pbkdf2_sha256\$100000\$/);
   assert.match(developmentSeed, /ON CONFLICT\(email\) DO NOTHING/);
 });
 
