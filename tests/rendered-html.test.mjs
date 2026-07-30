@@ -159,4 +159,7 @@ test("configura os recursos de produção da Cloudflare", async () => {
   assert.match(viteConfig, /configPath: "\.\/wrangler\.jsonc"/);
   assert.match(packageJson, /"db:migrate:remote"/);
   assert.match(packageJson, /"deploy:cloudflare"/);
+  assert.match(packageJson, /"packageManager": "npm@10\.9\.2"/);
+  await assert.rejects(access(new URL("pnpm-lock.yaml", root)));
+  await assert.rejects(access(new URL("pnpm-workspace.yaml", root)));
 });
