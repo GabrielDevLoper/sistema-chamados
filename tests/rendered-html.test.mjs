@@ -5,11 +5,12 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 
 test("entrega rotas públicas e painéis autenticados por organização", async () => {
-  const [queueApp, clientPage, displayPage, organizationHome] = await Promise.all([
+  const [queueApp, clientPage, displayPage, organizationHome, layout] = await Promise.all([
     readFile(new URL("app/queue-app.tsx", root), "utf8"),
     readFile(new URL("app/fila/[slug]/cliente/page.tsx", root), "utf8"),
     readFile(new URL("app/fila/[slug]/painel/page.tsx", root), "utf8"),
     readFile(new URL("app/app/page.tsx", root), "utf8"),
+    readFile(new URL("app/layout.tsx", root), "utf8"),
   ]);
 
   assert.match(clientPage, /getOrganizationBySlug/);
@@ -20,6 +21,8 @@ test("entrega rotas públicas e painéis autenticados por organização", async 
   assert.match(queueApp, /organization\.primaryColor/);
   assert.match(organizationHome, /Atender a fila/);
   assert.doesNotMatch(queueApp, /Alta Serra/);
+  assert.match(layout, /Atendimento simples\. Filas organizadas\./);
+  assert.doesNotMatch(layout, /Cartório|cartório/);
 });
 
 test("usa migrations versionadas e isolamento multiorganização", async () => {

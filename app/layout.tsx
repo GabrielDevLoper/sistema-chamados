@@ -26,24 +26,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const image = new URL("/og.png", `${protocol}://${host}`).toString();
 
   return {
-    title: "Cartório | Atendimento",
+    title: "Atendimento simples. Filas organizadas.",
     description:
-      "Sistema de senhas e atendimento do cartório.",
+      "Retirada de senhas e gestão de atendimento em uma fila integrada.",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
-      title: "Cartório | Atendimento simples. Fila organizada.",
+      title: "Atendimento simples. Filas organizadas.",
       description:
         "Retirada de senhas e gestão de atendimento em uma fila integrada.",
-      images: [{ url: image, width: 1731, height: 909 }],
+      images: [{ url: image, width: 1730, height: 909 }],
       locale: "pt_BR",
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: "Cartório | Atendimento simples. Fila organizada.",
+      title: "Atendimento simples. Filas organizadas.",
       description:
         "Retirada de senhas e gestão de atendimento em uma fila integrada.",
       images: [image],
