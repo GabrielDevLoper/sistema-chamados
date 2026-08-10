@@ -208,6 +208,7 @@ export function QueueApp({
   const [deskId, setDeskId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const [displaySound, setDisplaySound] = useState(false);
   const [deskCountDraft, setDeskCountDraft] = useState(4);
   const [savedMessage, setSavedMessage] = useState("");
@@ -263,6 +264,13 @@ export function QueueApp({
       window.clearInterval(clock);
     };
   }, [loadQueue]);
+
+  useEffect(() => {
+    const syncFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    syncFullscreen();
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
 
   useEffect(() => {
     if (!adminConfigLoaded.current && queue.desks.length) {
@@ -467,11 +475,15 @@ export function QueueApp({
     }
   }
 
-  function enterFullscreen() {
-    if (!document.fullscreenElement) {
-      void document.documentElement.requestFullscreen();
-    } else {
-      void document.exitFullscreen();
+  async function toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      setError("Não foi possível ativar a tela cheia neste dispositivo.");
     }
   }
 
@@ -500,8 +512,8 @@ export function QueueApp({
             >
               {displaySound ? "Som ativado ✓" : "Ativar som"}
             </button>
-            <button onClick={enterFullscreen} type="button">
-              Tela cheia
+            <button onClick={toggleFullscreen} type="button">
+              {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
             </button>
           </div>
         </header>
@@ -634,11 +646,33 @@ export function QueueApp({
         <header className="topbar">
           <Logo organization={queue.organization} />
           <ModeSwitch mode={initialMode} organizationSlug={organizationSlug} authenticated={authenticated} />
-          <div className="top-meta">
-            <span className="status-dot" />
-            <span>Sistema online</span>
-            <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
-          </div>
+          {initialMode === "client" ? (
+            <div className="client-top-actions">
+              <div className="top-meta">
+                <span className="status-dot" />
+                <span>Sistema online</span>
+                <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
+              </div>
+              <button
+                aria-label={fullscreen ? "Sair da tela cheia" : "Ativar tela cheia"}
+                aria-pressed={fullscreen}
+                className="client-fullscreen-button"
+                onClick={toggleFullscreen}
+                type="button"
+              >
+                <span aria-hidden="true">{fullscreen ? "×" : "⛶"}</span>
+                <span className="client-fullscreen-label">
+                  {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="top-meta">
+              <span className="status-dot" />
+              <span>Sistema online</span>
+              <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
+            </div>
+          )}
         </header>
       )}
 

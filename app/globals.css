@@ -885,6 +885,51 @@ input:focus-visible {
   margin-left: 12px;
 }
 
+.client-top-actions {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: flex-end;
+}
+
+.client-fullscreen-button {
+  align-items: center;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-border);
+  border-radius: 10px;
+  color: var(--brand-strong);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.client-fullscreen-button:hover,
+.client-fullscreen-button[aria-pressed="true"] {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: var(--brand-on-primary);
+}
+
+.client-fullscreen-button > span:first-child {
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+:fullscreen .client .topbar {
+  grid-template-columns: 1fr auto;
+}
+
+:fullscreen .client .mode-switch {
+  display: none;
+}
+
 .status-dot {
   background: #2c9d68;
   border: 4px solid #d9efdf;
@@ -2392,12 +2437,13 @@ button:disabled {
     display: none;
   }
 
-  .service-grid {
-    grid-template-columns: 1fr;
+  .client .service-grid {
+    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .service-card {
-    min-height: 132px;
+  .client .service-card {
+    min-height: 154px;
   }
 
   .attendant-content {
@@ -2460,6 +2506,48 @@ button:disabled {
   }
 }
 
+@media (orientation: portrait) and (max-width: 1100px) {
+  .client-content {
+    max-width: 900px;
+    padding-top: clamp(34px, 5vh, 72px);
+  }
+
+  .client .service-grid {
+    gap: clamp(14px, 2vw, 22px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: clamp(28px, 4vh, 48px);
+  }
+
+  .client .service-card {
+    align-content: center;
+    gap: 12px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    min-height: 195px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+
+  .client .service-icon {
+    height: 64px;
+    width: 64px;
+  }
+
+  .client .service-copy strong {
+    font-size: clamp(19px, 3vw, 25px);
+  }
+
+  .client .service-copy > span {
+    font-size: 13px;
+  }
+
+  .client .card-arrow {
+    position: absolute;
+    right: 18px;
+    top: 16px;
+  }
+}
+
 @media (max-width: 620px) {
   .topbar {
     min-height: 74px;
@@ -2479,6 +2567,16 @@ button:disabled {
 
   .service-card {
     padding: 21px 18px;
+  }
+
+  .client-fullscreen-label {
+    display: none;
+  }
+
+  .client-fullscreen-button {
+    justify-content: center;
+    padding: 10px;
+    width: 44px;
   }
 
   .priority-toggle {
@@ -2614,6 +2712,30 @@ button:disabled {
 
   .display-desk strong {
     font-size: 27px;
+  }
+}
+
+@media (max-width: 480px) {
+  .client .service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .client .service-card {
+    gap: 14px;
+    grid-template-columns: auto 1fr auto;
+    justify-items: stretch;
+    min-height: 132px;
+    text-align: left;
+  }
+
+  .client .service-icon {
+    height: 56px;
+    width: 56px;
+  }
+
+  .client .card-arrow {
+    align-self: center;
+    position: static;
   }
 }
 
