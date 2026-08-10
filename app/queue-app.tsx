@@ -6,7 +6,6 @@ import { brandThemeStyle } from "./brand-theme";
 import type { QueuePayload, QueueService, Ticket } from "../db/types";
 
 type Mode = "client" | "attendant" | "display" | "admin";
-type TerminalAction = "close" | "shutdown";
 type PublicOrganization = QueuePayload["organization"];
 
 const KIOSK_CONTROLLER_URL = "http://127.0.0.1:17865/control";
@@ -253,9 +252,7 @@ export function QueueApp({
   const [savedMessage, setSavedMessage] = useState("");
   const [terminalControlsOpen, setTerminalControlsOpen] = useState(false);
   const [terminalPin, setTerminalPin] = useState("");
-  const [terminalAction, setTerminalAction] = useState<TerminalAction | null>(
-    null,
-  );
+  const [terminalConfirming, setTerminalConfirming] = useState(false);
   const [terminalBusy, setTerminalBusy] = useState(false);
   const [terminalError, setTerminalError] = useState("");
   const announcedCall = useRef<string | null>(null);
@@ -462,13 +459,13 @@ export function QueueApp({
   function closeTerminalControls() {
     if (terminalBusy) return;
     setTerminalControlsOpen(false);
-    setTerminalAction(null);
+    setTerminalConfirming(false);
     setTerminalError("");
     setTerminalPin("");
   }
 
-  async function executeTerminalAction() {
-    if (!terminalAction || terminalPin.length < 6) {
+  async function executeTerminalClose() {
+    if (terminalPin.length < 6) {
       setTerminalError("Informe o PIN administrativo.");
       return;
     }
@@ -477,7 +474,7 @@ export function QueueApp({
     setTerminalError("");
     try {
       const response = await fetch(KIOSK_CONTROLLER_URL, {
-        body: JSON.stringify({ action: terminalAction, pin: terminalPin }),
+        body: JSON.stringify({ action: "close", pin: terminalPin }),
         cache: "no-store",
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -1275,45 +1272,30 @@ export function QueueApp({
             <p className="kicker">Acesso administrativo</p>
             <h2 id="terminal-controls-title">Controle do terminal</h2>
 
-            {terminalAction ? (
+            {terminalConfirming ? (
               <div className="terminal-confirmation">
-                <span aria-hidden="true">
-                  {terminalAction === "shutdown" ? "⏻" : "×"}
-                </span>
-                <strong>
-                  {terminalAction === "shutdown"
-                    ? "Desligar este computador?"
-                    : "Fechar a tela de retirada?"}
-                </strong>
+                <span aria-hidden="true">×</span>
+                <strong>Fechar a tela de retirada?</strong>
                 <p>
-                  {terminalAction === "shutdown"
-                    ? "O Windows será desligado e todos os programas abertos serão encerrados."
-                    : "Somente o Chrome vertical da retirada de senha será fechado."}
+                  Somente o Chrome vertical da retirada de senha será fechado.
+                  O painel horizontal continuará aberto.
                 </p>
                 <div className="terminal-confirmation-actions">
                   <button
                     className="secondary-button"
                     disabled={terminalBusy}
-                    onClick={() => setTerminalAction(null)}
+                    onClick={() => setTerminalConfirming(false)}
                     type="button"
                   >
                     Voltar
                   </button>
                   <button
-                    className={
-                      terminalAction === "shutdown"
-                        ? "terminal-danger-button"
-                        : "primary-button"
-                    }
+                    className="primary-button"
                     disabled={terminalBusy}
-                    onClick={executeTerminalAction}
+                    onClick={executeTerminalClose}
                     type="button"
                   >
-                    {terminalBusy
-                      ? "Executando…"
-                      : terminalAction === "shutdown"
-                        ? "Confirmar desligamento"
-                        : "Confirmar fechamento"}
+                    {terminalBusy ? "Fechando…" : "Confirmar fechamento"}
                   </button>
                 </div>
               </div>
@@ -1334,27 +1316,18 @@ export function QueueApp({
                     value={terminalPin}
                   />
                 </label>
-                <div className="terminal-action-grid">
-                  <button
-                    disabled={terminalPin.length < 6}
-                    onClick={() => setTerminalAction("close")}
-                    type="button"
-                  >
-                    <span aria-hidden="true">×</span>
-                    <strong>Fechar terminal</strong>
+                <button
+                  className="terminal-close-button"
+                  disabled={terminalPin.length < 6}
+                  onClick={() => setTerminalConfirming(true)}
+                  type="button"
+                >
+                  <span aria-hidden="true">×</span>
+                  <span>
+                    <strong>Fechar navegador</strong>
                     <small>Fecha somente esta tela vertical</small>
-                  </button>
-                  <button
-                    className="danger"
-                    disabled={terminalPin.length < 6}
-                    onClick={() => setTerminalAction("shutdown")}
-                    type="button"
-                  >
-                    <span aria-hidden="true">⏻</span>
-                    <strong>Desligar computador</strong>
-                    <small>Encerra o Windows com segurança</small>
-                  </button>
-                </div>
+                  </span>
+                </button>
               </>
             )}
 

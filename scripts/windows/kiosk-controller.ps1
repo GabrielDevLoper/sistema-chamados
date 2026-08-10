@@ -158,7 +158,7 @@ try {
       }
 
       $FailedAttempts = 0
-      if ($payload.action -notin @("close", "shutdown")) {
+      if ($payload.action -ne "close") {
         Send-Response $stream 400 "Bad Request" '{"error":"Comando inválido."}' $origin
         continue
       }
@@ -167,12 +167,7 @@ try {
       $responseSent = $true
       Start-Sleep -Milliseconds 900
 
-      if ($payload.action -eq "close") {
-        Close-RetiradaSenhaChrome
-      }
-      else {
-        Start-Process -FilePath "shutdown.exe" -ArgumentList "/s", "/t", "5"
-      }
+      Close-RetiradaSenhaChrome
     }
     catch {
       if (!$responseSent -and $stream -and $stream.CanWrite) {

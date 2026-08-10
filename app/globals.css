@@ -1040,50 +1040,51 @@ input:focus-visible {
   width: 100%;
 }
 
-.terminal-action-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: 1fr 1fr;
-  margin-top: 20px;
-}
-
-.terminal-action-grid button {
-  align-items: flex-start;
+.terminal-close-button {
+  align-items: center;
   background: var(--brand-soft);
   border: 1px solid var(--brand-border);
   border-radius: 10px;
   color: var(--brand-strong);
   cursor: pointer;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-height: 128px;
-  padding: 18px;
+  gap: 13px;
+  margin-top: 20px;
+  min-height: 82px;
+  padding: 16px 18px;
   text-align: left;
+  width: 100%;
 }
 
-.terminal-action-grid button.danger {
-  background: #fff1ee;
-  border-color: #edc3ba;
-  color: #9e3325;
-}
-
-.terminal-action-grid button:disabled {
+.terminal-close-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
 
-.terminal-action-grid button > span {
-  font-size: 25px;
+.terminal-close-button > span:first-child {
+  align-items: center;
+  background: var(--paper);
+  border-radius: 50%;
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 26px;
+  height: 44px;
+  justify-content: center;
   line-height: 1;
+  width: 44px;
 }
 
-.terminal-action-grid strong {
+.terminal-close-button > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.terminal-close-button strong {
   font-size: 14px;
-  margin-top: 5px;
 }
 
-.terminal-action-grid small {
+.terminal-close-button small {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.4;
@@ -1126,16 +1127,6 @@ input:focus-visible {
   display: flex;
   gap: 10px;
   justify-content: center;
-}
-
-.terminal-danger-button {
-  background: #a53527;
-  border: 1px solid #a53527;
-  border-radius: 7px;
-  color: white;
-  cursor: pointer;
-  font-weight: 800;
-  padding: 13px 18px;
 }
 
 .terminal-error {
@@ -2765,10 +2756,6 @@ button:disabled {
 
   .terminal-dialog {
     padding: 28px 20px;
-  }
-
-  .terminal-action-grid {
-    grid-template-columns: 1fr;
   }
 
   .priority-toggle {

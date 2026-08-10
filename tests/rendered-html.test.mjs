@@ -170,8 +170,9 @@ test("protege os controles locais do terminal", async () => {
   assert.doesNotMatch(queueApp, /123456/);
   assert.match(controller, /8d969eef6ecad3c29a3a629280e686cf0/);
   assert.match(controller, /RetiradaSenha/);
-  assert.match(controller, /shutdown\.exe/);
-  assert.match(installer, /Startup/);
+  assert.doesNotMatch(controller, /shutdown\.exe/);
+  assert.doesNotMatch(installer, /Startup/);
+  assert.doesNotMatch(queueApp, /Desligar computador/);
 });
 
 test("deriva uma paleta acessível da cor primária da organização", async () => {
