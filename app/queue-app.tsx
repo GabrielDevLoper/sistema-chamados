@@ -104,6 +104,24 @@ function servicePresentation(service: QueueService) {
   );
 }
 
+function showTicketNotification(
+  ticket: Ticket,
+  organization: PublicOrganization,
+) {
+  const notification = new Notification(`Nova senha: ${ticket.code}`, {
+    body: `${ticket.service}${ticket.priority ? " · Atendimento prioritário" : ""}`,
+    icon: organization.logoKey
+      ? `/api/public/${encodeURIComponent(organization.slug)}/logo`
+      : undefined,
+    tag: `queue-ticket-${ticket.id}`,
+  });
+
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+}
+
 function Logo({ organization }: { organization: PublicOrganization }) {
   return (
     <div className="brand" aria-label={organization.tradeName}>
@@ -225,12 +243,16 @@ export function QueueApp({
   const [now, setNow] = useState<Date | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [displaySound, setDisplaySound] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("default");
   const [deskCountDraft, setDeskCountDraft] = useState(4);
   const [savedMessage, setSavedMessage] = useState("");
   const announcedCall = useRef<string | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const adminConfigLoaded = useRef(false);
   const deskPreferenceLoaded = useRef(false);
+  const knownTicketIds = useRef<Set<number> | null>(null);
 
   const queueApiPath = authenticated
     ? "/api/tickets"
@@ -248,6 +270,34 @@ export function QueueApp({
         };
         if (!response.ok)
           throw new Error(data.error || "Não foi possível carregar a fila.");
+
+        if (initialMode === "attendant") {
+          if (knownTicketIds.current) {
+            if (
+              "Notification" in window &&
+              Notification.permission === "granted"
+            ) {
+              data.tickets
+                .filter(
+                  (ticket) =>
+                    ticket.status === "waiting" &&
+                    !knownTicketIds.current?.has(ticket.id),
+                )
+                .forEach((ticket) =>
+                  showTicketNotification(ticket, data.organization),
+                );
+            }
+
+            data.tickets.forEach((ticket) =>
+              knownTicketIds.current?.add(ticket.id),
+            );
+          } else {
+            knownTicketIds.current = new Set(
+              data.tickets.map((ticket) => ticket.id),
+            );
+          }
+        }
+
         setQueue(data);
         const savedDesk =
           initialMode === "attendant" && !deskPreferenceLoaded.current
@@ -288,6 +338,20 @@ export function QueueApp({
       window.clearInterval(clock);
     };
   }, [loadQueue]);
+
+  useEffect(() => {
+    if (initialMode !== "attendant") return;
+    const syncPermission = () =>
+      setNotificationPermission(
+        "Notification" in window ? Notification.permission : "unsupported",
+      );
+    const initialSync = window.setTimeout(syncPermission, 0);
+    window.addEventListener("focus", syncPermission);
+    return () => {
+      window.clearTimeout(initialSync);
+      window.removeEventListener("focus", syncPermission);
+    };
+  }, [initialMode]);
 
   useEffect(() => {
     const syncFullscreen = () =>
@@ -360,6 +424,29 @@ export function QueueApp({
   async function createTicket(serviceId: number) {
     const ticket = await sendAction({ action: "create", serviceId, priority });
     if (ticket) setCreatedTicket(ticket);
+  }
+
+  async function enableNotifications() {
+    if (!("Notification" in window)) {
+      setNotificationPermission("unsupported");
+      setError("Este navegador não oferece notificações do sistema.");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission === "granted") {
+      new Notification("Notificações ativadas", {
+        body: "Você será avisado quando uma nova senha for retirada.",
+        tag: "queue-notifications-enabled",
+      });
+      setError("");
+    } else if (permission === "denied") {
+      setError(
+        "As notificações foram bloqueadas. Libere-as nas configurações do navegador.",
+      );
+    }
   }
 
   async function saveDeskConfiguration() {
@@ -925,6 +1012,31 @@ export function QueueApp({
                 </span>
               </div>
             ) : null}
+
+            <div className="notification-control">
+              <button
+                className={`notification-button ${notificationPermission}`}
+                disabled={notificationPermission !== "default"}
+                onClick={enableNotifications}
+                type="button"
+              >
+                <span aria-hidden="true">🔔</span>
+                <strong>
+                  {notificationPermission === "granted"
+                    ? "Notificações ativadas"
+                    : notificationPermission === "denied"
+                      ? "Notificações bloqueadas"
+                      : notificationPermission === "unsupported"
+                        ? "Navegador sem suporte"
+                        : "Ativar notificações"}
+                </strong>
+              </button>
+              <small>
+                {notificationPermission === "granted"
+                  ? "Os alertas aparecerão mesmo com a janela minimizada."
+                  : "Receba um alerta sempre que uma nova senha for retirada."}
+              </small>
+            </div>
 
             <div className="queue-stats">
               <article>
