@@ -1132,13 +1132,6 @@ input:focus-visible {
   color: var(--deep);
 }
 
-.client-footer i {
-  background: #bec6bf;
-  border-radius: 50%;
-  height: 4px;
-  width: 4px;
-}
-
 .attendant-content {
   display: grid;
   grid-template-columns: minmax(290px, 25vw) 1fr;
@@ -1235,18 +1228,6 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   padding: 16px;
-}
-
-.queue-stats article.wide {
-  align-items: baseline;
-  display: grid;
-  gap: 4px 10px;
-  grid-column: 1 / -1;
-  grid-template-columns: auto 1fr;
-}
-
-.queue-stats article.wide small {
-  grid-column: 1 / -1;
 }
 
 .queue-stats small {
@@ -1663,7 +1644,7 @@ button:disabled {
 .ticket-details {
   display: grid;
   gap: 16px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   width: 100%;
 }
 
@@ -2456,12 +2437,7 @@ button:disabled {
   }
 
   .queue-stats {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .queue-stats article.wide {
-    display: flex;
-    grid-column: auto;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .admin-grid {
@@ -2609,10 +2585,6 @@ button:disabled {
 
   .queue-stats {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .queue-stats article.wide {
-    grid-column: 1 / -1;
   }
 
   .current-card {

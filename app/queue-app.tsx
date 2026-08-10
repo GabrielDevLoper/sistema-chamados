@@ -742,12 +742,11 @@ export function QueueApp({
           </label>
 
           <div className="client-footer">
-            <span>Tempo estimado de espera</span>
             <strong>
-              {queue.waiting === 0 ? "Sem fila no momento" : `~${Math.max(5, queue.waiting * 7)} min`}
+              {queue.waiting === 0
+                ? "Sem pessoas aguardando"
+                : `${queue.waiting} ${queue.waiting === 1 ? "pessoa aguardando" : "pessoas aguardando"}`}
             </strong>
-            <i />
-            <span>{queue.waiting} pessoas aguardando</span>
           </div>
         </section>
       ) : initialMode === "display" ? (
@@ -885,11 +884,6 @@ export function QueueApp({
                 <small>Atendidos hoje</small>
                 <strong>{queue.served.toString().padStart(2, "0")}</strong>
                 <span>finalizados</span>
-              </article>
-              <article className="wide">
-                <small>Tempo médio</small>
-                <strong>{queue.averageMinutes || 0} min</strong>
-                <span>por atendimento</span>
               </article>
             </div>
           </aside>
@@ -1054,9 +1048,6 @@ export function QueueApp({
             <div className="ticket-details">
               <span>
                 Pessoas à frente <strong>{peopleAhead}</strong>
-              </span>
-              <span>
-                Previsão <strong>~{Math.max(5, (peopleAhead + 1) * 7)} min</strong>
               </span>
             </div>
             <p className="ticket-note">
