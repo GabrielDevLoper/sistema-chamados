@@ -79,13 +79,25 @@ test("organiza guichês por setores e limita os serviços elegíveis", async () 
   assert.match(settings, /UPDATE tickets SET sector_id = NULL/);
 });
 
-test("protege contas com JWT, hash de senha e sessão revogável", async () => {
-  const [auth, login, platformRoute, privateTickets, developmentSeed] = await Promise.all([
+test("protege contas com JWT, hash de senha e sessão persistente revogável", async () => {
+  const [
+    auth,
+    login,
+    platformDb,
+    platformRoute,
+    privateTickets,
+    developmentSeed,
+    refreshRoute,
+    sessionKeeper,
+  ] = await Promise.all([
     readFile(new URL("db/auth.ts", root), "utf8"),
     readFile(new URL("db/login.ts", root), "utf8"),
+    readFile(new URL("db/platform.ts", root), "utf8"),
     readFile(new URL("app/api/platform/organizations/route.ts", root), "utf8"),
     readFile(new URL("app/api/tickets/route.ts", root), "utf8"),
     readFile(new URL("db/seeds/development-admin.sql", root), "utf8"),
+    readFile(new URL("app/api/auth/refresh/route.ts", root), "utf8"),
+    readFile(new URL("app/session-keeper.tsx", root), "utf8"),
   ]);
 
   assert.match(auth, /new SignJWT/);
@@ -95,6 +107,13 @@ test("protege contas com JWT, hash de senha e sessão revogável", async () => {
   assert.match(auth, /password\.length < 6/);
   assert.match(auth, /HttpOnly; SameSite=Strict/);
   assert.match(auth, /sessions\.revoked_at IS NULL/);
+  assert.match(auth, /SESSION_COOKIE_SECONDS = 60 \* 60 \* 24 \* 400/);
+  assert.match(auth, /SESSION_EXPIRES_AT = "9999-12-31 23:59:59"/);
+  assert.doesNotMatch(auth, /setExpirationTime|sessions\.expires_at > CURRENT_TIMESTAMP/);
+  assert.doesNotMatch(login, /expires_at > CURRENT_TIMESTAMP/);
+  assert.doesNotMatch(platformDb, /expires_at > CURRENT_TIMESTAMP/);
+  assert.match(refreshRoute, /refreshSessionCookie/);
+  assert.match(sessionKeeper, /setInterval\(refresh, REFRESH_INTERVAL_MS\)/);
   assert.match(login, /failed_login_attempts/);
   assert.match(platformRoute, /authorizePlatformAdmin\(request\)/);
   assert.match(privateTickets, /authorizeOrganization\(request\)/);

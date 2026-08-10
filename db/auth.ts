@@ -24,7 +24,8 @@ const COOKIE_NAME = "__Host-queue_session";
 const LOCAL_COOKIE_NAME = "queue_session";
 const JWT_ISSUER = "sistema-chamados";
 const JWT_AUDIENCE = "sistema-chamados-users";
-const SESSION_SECONDS = 60 * 60 * 12;
+const SESSION_COOKIE_SECONDS = 60 * 60 * 24 * 400;
+const SESSION_EXPIRES_AT = "9999-12-31 23:59:59";
 // Cloudflare Workers WebCrypto accepts at most 100,000 PBKDF2 iterations.
 const PBKDF2_ITERATIONS = 100_000;
 const encoder = new TextEncoder();
@@ -126,7 +127,11 @@ function cookieValue(request: Request) {
   return values.get(COOKIE_NAME) ?? values.get(LOCAL_COOKIE_NAME) ?? null;
 }
 
-export function sessionCookie(token: string, request: Request, maxAge = SESSION_SECONDS) {
+export function sessionCookie(
+  token: string,
+  request: Request,
+  maxAge = SESSION_COOKIE_SECONDS,
+) {
   const secure = new URL(request.url).protocol === "https:";
   const name = secure ? COOKIE_NAME : LOCAL_COOKIE_NAME;
   return `${name}=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Strict${secure ? "; Secure" : ""}`;
@@ -153,10 +158,6 @@ export function assertSameOrigin(request: Request) {
 export async function createSession(user: AuthenticatedUser, request: Request) {
   const id = crypto.randomUUID();
   const now = Math.floor(Date.now() / 1000);
-  const expiresAt = new Date((now + SESSION_SECONDS) * 1000)
-    .toISOString()
-    .slice(0, 19)
-    .replace("T", " ");
   const token = await new SignJWT({
     role: user.role,
     organizationId: user.organizationId,
@@ -167,7 +168,6 @@ export async function createSession(user: AuthenticatedUser, request: Request) {
     .setSubject(String(user.id))
     .setJti(id)
     .setIssuedAt(now)
-    .setExpirationTime(now + SESSION_SECONDS)
     .sign(signingKey());
   await getD1()
     .prepare(
@@ -179,10 +179,10 @@ export async function createSession(user: AuthenticatedUser, request: Request) {
       user.id,
       await sha256(token),
       request.headers.get("user-agent")?.slice(0, 180) ?? null,
-      expiresAt
+      SESSION_EXPIRES_AT
     )
     .run();
-  return { token, expiresAt };
+  return { token, expiresAt: SESSION_EXPIRES_AT };
 }
 
 export async function authenticateRequest(request: Request): Promise<AuthenticatedUser> {
@@ -196,7 +196,7 @@ export async function authenticateRequest(request: Request): Promise<Authenticat
       audience: JWT_AUDIENCE,
     }));
   } catch {
-    throw new AuthenticationError("Sessão inválida ou expirada.");
+    throw new AuthenticationError("Sessão inválida.");
   }
   const userId = Number(payload.sub);
   if (!payload.jti || !Number.isInteger(userId)) {
@@ -211,7 +211,7 @@ export async function authenticateRequest(request: Request): Promise<Authenticat
        JOIN users ON users.id = sessions.user_id
        LEFT JOIN organizations ON organizations.id = users.organization_id
        WHERE sessions.id = ? AND sessions.user_id = ? AND sessions.token_hash = ?
-         AND sessions.revoked_at IS NULL AND sessions.expires_at > CURRENT_TIMESTAMP
+         AND sessions.revoked_at IS NULL
        LIMIT 1`
     )
     .bind(payload.jti, userId, await sha256(token))
@@ -244,6 +244,13 @@ export async function authenticateRequest(request: Request): Promise<Authenticat
     email: row.email,
     role: row.role,
   };
+}
+
+export async function refreshSessionCookie(request: Request) {
+  const token = cookieValue(request);
+  if (!token) return null;
+  await authenticateRequest(request);
+  return sessionCookie(token, request);
 }
 
 export async function revokeCurrentSession(request: Request) {

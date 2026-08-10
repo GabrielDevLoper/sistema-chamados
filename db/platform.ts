@@ -84,7 +84,7 @@ export async function listOrganizationSummaries(): Promise<OrganizationSummary[]
         COUNT(sessions.id) AS active_sessions
        FROM users
        LEFT JOIN sessions ON sessions.user_id = users.id
-         AND sessions.revoked_at IS NULL AND sessions.expires_at > CURRENT_TIMESTAMP
+         AND sessions.revoked_at IS NULL
        WHERE users.role = 'organization' AND users.organization_id IS NOT NULL
        GROUP BY users.id`
     )
@@ -119,7 +119,7 @@ export async function getOrganizationSummary(
         COUNT(sessions.id) AS active_sessions
        FROM users
        LEFT JOIN sessions ON sessions.user_id = users.id
-         AND sessions.revoked_at IS NULL AND sessions.expires_at > CURRENT_TIMESTAMP
+         AND sessions.revoked_at IS NULL
        WHERE organization_id = ? AND role = 'organization' LIMIT 1`
     )
     .bind(id)

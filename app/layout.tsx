@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Libre_Baskerville } from "next/font/google";
 import { headers } from "next/headers";
+import { SessionKeeper } from "./session-keeper";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -62,7 +63,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${dmSans.variable} ${libre.variable}`}>{children}</body>
+      <body className={`${dmSans.variable} ${libre.variable}`}>
+        <SessionKeeper />
+        {children}
+      </body>
     </html>
   );
 }

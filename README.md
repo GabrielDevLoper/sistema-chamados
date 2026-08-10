@@ -124,6 +124,8 @@ são separados dos dados publicados.
 
 - JWT assinado com `HS256` e segredo exclusivo do ambiente;
 - cookie de sessão `HttpOnly`, `SameSite=Strict` e `Secure` em HTTPS;
+- sessão persistente sem expiração automática, com renovação periódica do cookie
+  enquanto o sistema estiver em uso;
 - senha protegida com PBKDF2-HMAC-SHA256, salt aleatório e 100.000 iterações,
   compatível com o WebCrypto do Cloudflare Workers;
 - sessões persistidas por hash e revogáveis no D1;

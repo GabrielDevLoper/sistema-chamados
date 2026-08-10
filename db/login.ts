@@ -146,7 +146,6 @@ export async function listActiveSessions(userId: number) {
     .prepare(
       `SELECT id, device_label, last_seen_at, expires_at, created_at
        FROM sessions WHERE user_id = ? AND revoked_at IS NULL
-         AND expires_at > CURRENT_TIMESTAMP
        ORDER BY last_seen_at DESC`
     )
     .bind(userId)
