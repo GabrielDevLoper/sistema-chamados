@@ -3,20 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { brandThemeStyle } from "./brand-theme";
-import type {
-  QueuePayload,
-  QueueService,
-  Ticket,
-} from "../db/types";
+import type { QueuePayload, QueueService, Ticket } from "../db/types";
 
 type Mode = "client" | "attendant" | "display" | "admin";
 type PublicOrganization = QueuePayload["organization"];
 
-const SERVICE_PRESENTATION: Record<string, {
-  eyebrow: string;
-  description: string;
-  icon: string;
-}> = {
+const SERVICE_PRESENTATION: Record<
+  string,
+  {
+    eyebrow: string;
+    description: string;
+    icon: string;
+  }
+> = {
   "Atendimento geral": {
     eyebrow: "Serviços diversos",
     description: "Dúvidas, orientações e outros serviços",
@@ -96,11 +95,13 @@ function formatDisplayDate(date: Date | null, timezone: string) {
 }
 
 function servicePresentation(service: QueueService) {
-  return SERVICE_PRESENTATION[service.name] ?? {
-    eyebrow: "Atendimento",
-    description: "Selecione para retirar uma senha",
-    icon: service.name.trim().charAt(0).toUpperCase() || "S",
-  };
+  return (
+    SERVICE_PRESENTATION[service.name] ?? {
+      eyebrow: "Atendimento",
+      description: "Selecione para retirar uma senha",
+      icon: service.name.trim().charAt(0).toUpperCase() || "S",
+    }
+  );
 }
 
 function Logo({ organization }: { organization: PublicOrganization }) {
@@ -146,40 +147,54 @@ function ModeSwitch({
     <nav className="mode-switch" aria-label="Selecionar tela">
       {authenticated ? (
         <>
-          <a className={mode === "attendant" ? "active" : ""} href="/app/atendimento">
+          <a
+            className={mode === "attendant" ? "active" : ""}
+            href="/app/atendimento"
+          >
             Atendimento
           </a>
-          <a href={`/fila/${encodeURIComponent(organizationSlug ?? "")}/painel`}>
+          <a
+            href={`/fila/${encodeURIComponent(organizationSlug ?? "")}/painel`}
+          >
             Painel público
           </a>
-          <a className={mode === "admin" ? "active" : ""} href="/app/configuracoes">
+          <a
+            className={mode === "admin" ? "active" : ""}
+            href="/app/configuracoes"
+          >
             Configurações
           </a>
         </>
       ) : (
         <>
-      <a
-        className={mode === "client" ? "active" : ""}
-        href={publicBase ? `${publicBase}/cliente` : "/cliente"}
-      >
-        Retirar senha
-      </a>
-      {!organizationSlug ? (
-        <a className={mode === "attendant" ? "active" : ""} href="/atendente">
-          Área do atendente
-        </a>
-      ) : null}
-      <a
-        className={mode === "display" ? "active" : ""}
-        href={publicBase ? `${publicBase}/painel` : "/painel"}
-      >
-        Painel de chamadas
-      </a>
-      {!organizationSlug ? (
-        <a className={mode === "admin" ? "active" : ""} href="/administrador">
-          Administração
-        </a>
-      ) : null}
+          <a
+            className={mode === "client" ? "active" : ""}
+            href={publicBase ? `${publicBase}/cliente` : "/cliente"}
+          >
+            Retirar senha
+          </a>
+          {!organizationSlug ? (
+            <a
+              className={mode === "attendant" ? "active" : ""}
+              href="/atendente"
+            >
+              Área do atendente
+            </a>
+          ) : null}
+          <a
+            className={mode === "display" ? "active" : ""}
+            href={publicBase ? `${publicBase}/painel` : "/painel"}
+          >
+            Painel de chamadas
+          </a>
+          {!organizationSlug ? (
+            <a
+              className={mode === "admin" ? "active" : ""}
+              href="/administrador"
+            >
+              Administração
+            </a>
+          ) : null}
         </>
       )}
     </nav>
@@ -223,33 +238,42 @@ export function QueueApp({
       ? `/api/public/${encodeURIComponent(organizationSlug)}/tickets`
       : "/api/tickets";
 
-  const loadQueue = useCallback(async (quiet = false) => {
-    if (!quiet) setLoading(true);
-    try {
-      const response = await fetch(queueApiPath, { cache: "no-store" });
-      const data = (await response.json()) as QueuePayload & { error?: string };
-      if (!response.ok) throw new Error(data.error || "Não foi possível carregar a fila.");
-      setQueue(data);
-      const savedDesk =
-        initialMode === "attendant" && !deskPreferenceLoaded.current
-          ? Number(window.localStorage.getItem(`queue-desk:${data.organization.slug}`))
-          : null;
-      deskPreferenceLoaded.current = true;
-      setDeskId((currentDeskId) =>
-        data.desks.some((desk) => desk.id === savedDesk)
-          ? savedDesk
-          :
-        data.desks.some((desk) => desk.id === currentDeskId)
-          ? currentDeskId
-          : (data.desks[0]?.id ?? null)
-      );
-      setError("");
-    } catch {
-      setError("Não foi possível conectar à fila. Tente novamente.");
-    } finally {
-      if (!quiet) setLoading(false);
-    }
-  }, [initialMode, queueApiPath]);
+  const loadQueue = useCallback(
+    async (quiet = false) => {
+      if (!quiet) setLoading(true);
+      try {
+        const response = await fetch(queueApiPath, { cache: "no-store" });
+        const data = (await response.json()) as QueuePayload & {
+          error?: string;
+        };
+        if (!response.ok)
+          throw new Error(data.error || "Não foi possível carregar a fila.");
+        setQueue(data);
+        const savedDesk =
+          initialMode === "attendant" && !deskPreferenceLoaded.current
+            ? Number(
+                window.localStorage.getItem(
+                  `queue-desk:${data.organization.slug}`,
+                ),
+              )
+            : null;
+        deskPreferenceLoaded.current = true;
+        setDeskId((currentDeskId) =>
+          data.desks.some((desk) => desk.id === savedDesk)
+            ? savedDesk
+            : data.desks.some((desk) => desk.id === currentDeskId)
+              ? currentDeskId
+              : (data.desks[0]?.id ?? null),
+        );
+        setError("");
+      } catch {
+        setError("Não foi possível conectar à fila. Tente novamente.");
+      } finally {
+        if (!quiet) setLoading(false);
+      }
+    },
+    [initialMode, queueApiPath],
+  );
 
   useEffect(() => {
     const updateClock = () => setNow(new Date());
@@ -266,10 +290,12 @@ export function QueueApp({
   }, [loadQueue]);
 
   useEffect(() => {
-    const syncFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
+    const syncFullscreen = () =>
+      setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", syncFullscreen);
     syncFullscreen();
-    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+    return () =>
+      document.removeEventListener("fullscreenchange", syncFullscreen);
   }, []);
 
   useEffect(() => {
@@ -287,14 +313,19 @@ export function QueueApp({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as { ticket?: Ticket; error?: string };
+      const data = (await response.json()) as {
+        ticket?: Ticket;
+        error?: string;
+      };
       if (!response.ok) throw new Error(data.error || "Ação não concluída.");
       await loadQueue(true);
       setError("");
       return data.ticket ?? null;
     } catch (requestError) {
       setError(
-        requestError instanceof Error ? requestError.message : "Ação não concluída."
+        requestError instanceof Error
+          ? requestError.message
+          : "Ação não concluída.",
       );
       return null;
     } finally {
@@ -321,18 +352,20 @@ export function QueueApp({
         error?: string;
       };
       if (!response.ok) {
-        throw new Error(data.error || "Não foi possível salvar a configuração.");
+        throw new Error(
+          data.error || "Não foi possível salvar a configuração.",
+        );
       }
       await loadQueue(true);
       setSavedMessage(
-        `${data.deskCount} ${data.deskCount === 1 ? "guichê configurado" : "guichês configurados"} com sucesso.`
+        `${data.deskCount} ${data.deskCount === 1 ? "guichê configurado" : "guichês configurados"} com sucesso.`,
       );
       setError("");
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "Não foi possível salvar a configuração."
+          : "Não foi possível salvar a configuração.",
       );
     } finally {
       setBusy(false);
@@ -341,41 +374,41 @@ export function QueueApp({
 
   const waitingTickets = useMemo(
     () => queue.tickets.filter((ticket) => ticket.status === "waiting"),
-    [queue.tickets]
+    [queue.tickets],
   );
   const selectedDesk = useMemo(
     () => queue.desks.find((desk) => desk.id === deskId) ?? null,
-    [queue.desks, deskId]
+    [queue.desks, deskId],
   );
   const eligibleWaitingTickets = useMemo(
     () =>
       waitingTickets.filter(
         (ticket) =>
           ticket.serviceId !== null &&
-          selectedDesk?.serviceIds.includes(ticket.serviceId)
+          selectedDesk?.serviceIds.includes(ticket.serviceId),
       ),
-    [selectedDesk, waitingTickets]
+    [selectedDesk, waitingTickets],
   );
   const eligibleServiceNames = useMemo(
     () =>
       queue.services
         .filter((service) => selectedDesk?.serviceIds.includes(service.id))
         .map((service) => service.name),
-    [queue.services, selectedDesk]
+    [queue.services, selectedDesk],
   );
   const currentTicket = useMemo(
     () =>
       queue.tickets.find(
-        (ticket) => ticket.status === "called" && ticket.deskId === deskId
+        (ticket) => ticket.status === "called" && ticket.deskId === deskId,
       ) ?? null,
-    [queue.tickets, deskId]
+    [queue.tickets, deskId],
   );
   const recentTickets = useMemo(
     () =>
       queue.tickets
         .filter((ticket) => ticket.status === "finished")
         .slice(0, 4),
-    [queue.tickets]
+    [queue.tickets],
   );
   const calledTickets = useMemo(
     () =>
@@ -384,9 +417,9 @@ export function QueueApp({
         .sort(
           (a, b) =>
             new Date(b.calledAt ?? 0).getTime() -
-            new Date(a.calledAt ?? 0).getTime()
+            new Date(a.calledAt ?? 0).getTime(),
         ),
-    [queue.tickets]
+    [queue.tickets],
   );
   const featuredTicket = calledTickets[0] ?? null;
   const previousCalls = calledTickets.slice(1, 5);
@@ -395,16 +428,17 @@ export function QueueApp({
       new Set(
         queue.tickets
           .filter((ticket) => ticket.status === "called" && ticket.desk)
-          .map((ticket) => ticket.desk)
+          .map((ticket) => ticket.desk),
       ),
-    [queue.tickets]
+    [queue.tickets],
   );
   const peopleAhead = createdTicket
     ? queue.tickets.filter(
         (ticket) =>
           ticket.status === "waiting" &&
           ticket.id < createdTicket.id &&
-          (ticket.priority >= createdTicket.priority || createdTicket.priority === 0)
+          (ticket.priority >= createdTicket.priority ||
+            createdTicket.priority === 0),
       ).length
     : 0;
 
@@ -422,11 +456,11 @@ export function QueueApp({
         gain.gain.setValueAtTime(0.0001, context.currentTime + delay);
         gain.gain.exponentialRampToValueAtTime(
           0.2,
-          context.currentTime + delay + 0.02
+          context.currentTime + delay + 0.02,
         );
         gain.gain.exponentialRampToValueAtTime(
           0.0001,
-          context.currentTime + delay + 0.22
+          context.currentTime + delay + 0.22,
         );
         oscillator.connect(gain);
         gain.connect(context.destination);
@@ -440,7 +474,7 @@ export function QueueApp({
       window.speechSynthesis.cancel();
       const spokenCode = ticket.code.split("").join(" ");
       const message = new SpeechSynthesisUtterance(
-        `Senha ${spokenCode}. Dirija-se ao guichê ${ticket.desk}.`
+        `Senha ${spokenCode}. Dirija-se ao guichê ${ticket.desk}.`,
       );
       message.lang = "pt-BR";
       message.rate = 0.82;
@@ -538,102 +572,117 @@ export function QueueApp({
         <>
           <header className="topbar">
             <Logo organization={queue.organization} />
-            <ModeSwitch mode={initialMode} organizationSlug={organizationSlug} authenticated={authenticated} />
+            <ModeSwitch
+              mode={initialMode}
+              organizationSlug={organizationSlug}
+              authenticated={authenticated}
+            />
             <div className="top-meta">
               <span className="status-dot" />
               <span>Sistema online</span>
-              <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
+              <strong>
+                {formatClockTime(now, queue.organization.timezone)}
+              </strong>
             </div>
           </header>
           <section className="admin-content">
-          <div className="admin-heading">
-            <p className="kicker">Configuração do sistema</p>
-            <h1>Administração</h1>
-            <p>
-              Defina quantos guichês estarão disponíveis para o atendimento do
-              estabelecimento.
-            </p>
-          </div>
-
-          <div className="admin-grid">
-            <section className="admin-setting-card">
-              <div className="section-label">
-                <span />
-                Estrutura de atendimento
-              </div>
-              <h2>Quantidade de guichês</h2>
+            <div className="admin-heading">
+              <p className="kicker">Configuração do sistema</p>
+              <h1>Administração</h1>
               <p>
-                Essa configuração atualiza automaticamente a lista disponível
-                para todos os atendentes.
+                Defina quantos guichês estarão disponíveis para o atendimento do
+                estabelecimento.
               </p>
+            </div>
 
-              <div className="desk-counter">
-                <button
-                  aria-label="Diminuir quantidade de guichês"
-                  disabled={busy || deskCountDraft <= 1}
-                  onClick={() => setDeskCountDraft((value) => Math.max(1, value - 1))}
-                  type="button"
-                >
-                  −
-                </button>
-                <label>
-                  <span>Guichês</span>
-                  <input
-                    aria-label="Quantidade de guichês"
-                    max={50}
-                    min={1}
-                    onChange={(event) =>
-                      setDeskCountDraft(
-                        Math.min(50, Math.max(1, Number(event.target.value) || 1))
-                      )
-                    }
-                    type="number"
-                    value={deskCountDraft}
-                  />
-                </label>
-                <button
-                  aria-label="Aumentar quantidade de guichês"
-                  disabled={busy || deskCountDraft >= 50}
-                  onClick={() => setDeskCountDraft((value) => Math.min(50, value + 1))}
-                  type="button"
-                >
-                  +
-                </button>
-              </div>
-
-              <div className="admin-range-note">
-                Mínimo de 1 e máximo de 50 guichês.
-              </div>
-              <button
-                className="admin-save-button"
-                disabled={busy || deskCountDraft === queue.desks.length}
-                onClick={saveDeskConfiguration}
-                type="button"
-              >
-                {busy ? "Salvando…" : "Salvar configuração"}
-              </button>
-              {savedMessage ? (
-                <p className="admin-success" role="status">
-                  ✓ {savedMessage}
-                </p>
-              ) : null}
-            </section>
-
-            <section className="admin-preview-card">
-              <div className="admin-preview-header">
-                <div>
-                  <small>Configuração atual</small>
-                  <strong>
-                    {queue.desks.length.toString().padStart(2, "0")} guichês
-                  </strong>
+            <div className="admin-grid">
+              <section className="admin-setting-card">
+                <div className="section-label">
+                  <span />
+                  Estrutura de atendimento
                 </div>
-                <span>
-                  <i /> Sistema sincronizado
-                </span>
-              </div>
-              <div className="desk-preview-grid">
-                {Array.from({ length: deskCountDraft }, (_, index) => index + 1).map(
-                  (number) => (
+                <h2>Quantidade de guichês</h2>
+                <p>
+                  Essa configuração atualiza automaticamente a lista disponível
+                  para todos os atendentes.
+                </p>
+
+                <div className="desk-counter">
+                  <button
+                    aria-label="Diminuir quantidade de guichês"
+                    disabled={busy || deskCountDraft <= 1}
+                    onClick={() =>
+                      setDeskCountDraft((value) => Math.max(1, value - 1))
+                    }
+                    type="button"
+                  >
+                    −
+                  </button>
+                  <label>
+                    <span>Guichês</span>
+                    <input
+                      aria-label="Quantidade de guichês"
+                      max={50}
+                      min={1}
+                      onChange={(event) =>
+                        setDeskCountDraft(
+                          Math.min(
+                            50,
+                            Math.max(1, Number(event.target.value) || 1),
+                          ),
+                        )
+                      }
+                      type="number"
+                      value={deskCountDraft}
+                    />
+                  </label>
+                  <button
+                    aria-label="Aumentar quantidade de guichês"
+                    disabled={busy || deskCountDraft >= 50}
+                    onClick={() =>
+                      setDeskCountDraft((value) => Math.min(50, value + 1))
+                    }
+                    type="button"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <div className="admin-range-note">
+                  Mínimo de 1 e máximo de 50 guichês.
+                </div>
+                <button
+                  className="admin-save-button"
+                  disabled={busy || deskCountDraft === queue.desks.length}
+                  onClick={saveDeskConfiguration}
+                  type="button"
+                >
+                  {busy ? "Salvando…" : "Salvar configuração"}
+                </button>
+                {savedMessage ? (
+                  <p className="admin-success" role="status">
+                    ✓ {savedMessage}
+                  </p>
+                ) : null}
+              </section>
+
+              <section className="admin-preview-card">
+                <div className="admin-preview-header">
+                  <div>
+                    <small>Configuração atual</small>
+                    <strong>
+                      {queue.desks.length.toString().padStart(2, "0")} guichês
+                    </strong>
+                  </div>
+                  <span>
+                    <i /> Sistema sincronizado
+                  </span>
+                </div>
+                <div className="desk-preview-grid">
+                  {Array.from(
+                    { length: deskCountDraft },
+                    (_, index) => index + 1,
+                  ).map((number) => (
                     <article
                       className={activeDeskNumbers.has(number) ? "active" : ""}
                       key={number}
@@ -641,37 +690,46 @@ export function QueueApp({
                       <span>Guichê</span>
                       <strong>{number.toString().padStart(2, "0")}</strong>
                       <small>
-                        {activeDeskNumbers.has(number) ? "Em atendimento" : "Disponível"}
+                        {activeDeskNumbers.has(number)
+                          ? "Em atendimento"
+                          : "Disponível"}
                       </small>
                     </article>
-                  )
-                )}
-              </div>
-              <div className="admin-help">
-                <strong>Como funciona?</strong>
-                <p>
-                  Após salvar, os atendentes verão somente os guichês ativos no
-                  seletor. O painel da TV continuará indicando normalmente o
-                  guichê de cada chamada.
-                </p>
-              </div>
-            </section>
-          </div>
+                  ))}
+                </div>
+                <div className="admin-help">
+                  <strong>Como funciona?</strong>
+                  <p>
+                    Após salvar, os atendentes verão somente os guichês ativos
+                    no seletor. O painel da TV continuará indicando normalmente
+                    o guichê de cada chamada.
+                  </p>
+                </div>
+              </section>
+            </div>
           </section>
         </>
       ) : (
         <header className="topbar">
           <Logo organization={queue.organization} />
-          <ModeSwitch mode={initialMode} organizationSlug={organizationSlug} authenticated={authenticated} />
+          <ModeSwitch
+            mode={initialMode}
+            organizationSlug={organizationSlug}
+            authenticated={authenticated}
+          />
           {initialMode === "client" ? (
             <div className="client-top-actions">
               <div className="top-meta">
                 <span className="status-dot" />
                 <span>Sistema online</span>
-                <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
+                <strong>
+                  {formatClockTime(now, queue.organization.timezone)}
+                </strong>
               </div>
               <button
-                aria-label={fullscreen ? "Sair da tela cheia" : "Ativar tela cheia"}
+                aria-label={
+                  fullscreen ? "Sair da tela cheia" : "Ativar tela cheia"
+                }
                 aria-pressed={fullscreen}
                 className="client-fullscreen-button"
                 onClick={toggleFullscreen}
@@ -687,7 +745,9 @@ export function QueueApp({
             <div className="top-meta">
               <span className="status-dot" />
               <span>Sistema online</span>
-              <strong>{formatClockTime(now, queue.organization.timezone)}</strong>
+              <strong>
+                {formatClockTime(now, queue.organization.timezone)}
+              </strong>
             </div>
           )}
         </header>
@@ -766,7 +826,9 @@ export function QueueApp({
                 <strong>{featuredTicket.code}</strong>
                 <p>
                   {featuredTicket.service}
-                  {featuredTicket.sectorName ? ` · ${featuredTicket.sectorName}` : ""}
+                  {featuredTicket.sectorName
+                    ? ` · ${featuredTicket.sectorName}`
+                    : ""}
                 </p>
                 {featuredTicket.priority ? (
                   <em>Atendimento prioritário</em>
@@ -824,8 +886,8 @@ export function QueueApp({
           <footer className="display-footer">
             <span className="display-footer-mark">CR</span>
             <p>
-              Tenha seus documentos em mãos. Ao ser chamado, dirija-se ao
-              guichê indicado.
+              Tenha seus documentos em mãos. Ao ser chamado, dirija-se ao guichê
+              indicado.
             </p>
             <span>Atendimento com respeito e segurança</span>
           </footer>
@@ -849,7 +911,7 @@ export function QueueApp({
                   setDeskId(nextDeskId);
                   window.localStorage.setItem(
                     `queue-desk:${queue.organization.slug}`,
-                    String(nextDeskId)
+                    String(nextDeskId),
                   );
                 }}
                 value={deskId ?? ""}
@@ -877,7 +939,9 @@ export function QueueApp({
             <div className="queue-stats">
               <article>
                 <small>Aguardando</small>
-                <strong>{eligibleWaitingTickets.length.toString().padStart(2, "0")}</strong>
+                <strong>
+                  {eligibleWaitingTickets.length.toString().padStart(2, "0")}
+                </strong>
                 <span>compatíveis com o setor</span>
               </article>
               <article>
@@ -902,19 +966,28 @@ export function QueueApp({
                       <strong>{currentTicket.code}</strong>
                       <span>
                         {currentTicket.service}
-                        {currentTicket.sectorName ? ` · ${currentTicket.sectorName}` : ""}
+                        {currentTicket.sectorName
+                          ? ` · ${currentTicket.sectorName}`
+                          : ""}
                       </span>
                     </div>
                     <div className="called-at">
                       <small>Chamado às</small>
-                      <strong>{formatTime(currentTicket.calledAt, queue.organization.timezone)}</strong>
+                      <strong>
+                        {formatTime(
+                          currentTicket.calledAt,
+                          queue.organization.timezone,
+                        )}
+                      </strong>
                     </div>
                   </div>
                   <div className="action-row">
                     <button
                       className="secondary-button"
                       disabled={busy}
-                      onClick={() => sendAction({ action: "recall", id: currentTicket.id })}
+                      onClick={() =>
+                        sendAction({ action: "recall", id: currentTicket.id })
+                      }
                       type="button"
                     >
                       ↻ Chamar novamente
@@ -922,7 +995,9 @@ export function QueueApp({
                     <button
                       className="ghost-button danger"
                       disabled={busy}
-                      onClick={() => sendAction({ action: "no_show", id: currentTicket.id })}
+                      onClick={() =>
+                        sendAction({ action: "no_show", id: currentTicket.id })
+                      }
                       type="button"
                     >
                       Não compareceu
@@ -930,7 +1005,9 @@ export function QueueApp({
                     <button
                       className="primary-button"
                       disabled={busy}
-                      onClick={() => sendAction({ action: "finish", id: currentTicket.id })}
+                      onClick={() =>
+                        sendAction({ action: "finish", id: currentTicket.id })
+                      }
                       type="button"
                     >
                       Finalizar atendimento ✓
@@ -946,11 +1023,15 @@ export function QueueApp({
                   </div>
                   <button
                     className="primary-button"
-                    disabled={busy || eligibleWaitingTickets.length === 0 || !deskId}
+                    disabled={
+                      busy || eligibleWaitingTickets.length === 0 || !deskId
+                    }
                     onClick={() => sendAction({ action: "call_next", deskId })}
                     type="button"
                   >
-                    {eligibleWaitingTickets.length ? "Chamar próxima senha →" : "Fila do setor vazia"}
+                    {eligibleWaitingTickets.length
+                      ? "Chamar próxima senha →"
+                      : "Fila do setor vazia"}
                   </button>
                 </div>
               )}
@@ -987,12 +1068,17 @@ export function QueueApp({
                       </div>
                       <span className="ticket-service">{ticket.service}</span>
                       <span className="ticket-time">
-                        {formatTime(ticket.createdAt, queue.organization.timezone)}
+                        {formatTime(
+                          ticket.createdAt,
+                          queue.organization.timezone,
+                        )}
                       </span>
                     </article>
                   ))
                 ) : (
-                  <p className="queue-empty">Nenhuma senha compatível com este setor.</p>
+                  <p className="queue-empty">
+                    Nenhuma senha compatível com este setor.
+                  </p>
                 )}
               </div>
             </section>
@@ -1036,7 +1122,7 @@ export function QueueApp({
               <strong>
                 {formatTicketDate(
                   createdTicket.createdAt,
-                  queue.organization.timezone
+                  queue.organization.timezone,
                 )}
               </strong>
             </p>
@@ -1044,19 +1130,21 @@ export function QueueApp({
             <strong className="printed-code">{createdTicket.code}</strong>
             <span className="printed-service">{createdTicket.service}</span>
             {createdTicket.priority ? <em>Atendimento prioritário</em> : null}
-            <div className="ticket-divider" />
-            <div className="ticket-details">
-              <span>
-                Pessoas à frente <strong>{peopleAhead}</strong>
-              </span>
-            </div>
             <p className="ticket-note">
               Aguarde sua senha aparecer no painel e fique atento à chamada.
             </p>
-            <button className="print-button" onClick={printCreatedTicket} type="button">
+            <button
+              className="print-button"
+              onClick={printCreatedTicket}
+              type="button"
+            >
               Imprimir comprovante
             </button>
-            <button className="finish-link" onClick={() => setCreatedTicket(null)} type="button">
+            <button
+              className="finish-link"
+              onClick={() => setCreatedTicket(null)}
+              type="button"
+            >
               Concluir
             </button>
           </div>
