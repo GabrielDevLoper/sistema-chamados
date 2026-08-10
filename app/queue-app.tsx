@@ -374,7 +374,10 @@ export function QueueApp({
     if (initialMode !== "client" || !createdTicket) return;
 
     const root = document.documentElement;
-    const finishPrinting = () => setCreatedTicket(null);
+    const finishPrinting = () => {
+      setCreatedTicket(null);
+      setPriority(false);
+    };
     root.classList.add("printing-ticket");
     window.addEventListener("afterprint", finishPrinting, { once: true });
 
@@ -384,6 +387,7 @@ export function QueueApp({
       } catch {
         setError("Não foi possível imprimir o comprovante.");
         setCreatedTicket(null);
+        setPriority(false);
       }
     });
 
@@ -897,11 +901,59 @@ export function QueueApp({
         <section className="client-content">
           <div className="client-heading">
             <p className="kicker">Bem-vindo à {queue.organization.tradeName}</p>
-            <h1>Como podemos ajudar?</h1>
-            <p>Toque em uma opção abaixo para retirar sua senha.</p>
+            <h1>
+              {priority ? "Escolha o serviço prioritário" : "Como podemos ajudar?"}
+            </h1>
+            <p>
+              {priority
+                ? "A prioridade está ativa. Toque no serviço que você precisa."
+                : "Toque em um serviço ou escolha o atendimento prioritário."}
+            </p>
           </div>
 
+          {priority ? (
+            <div className="priority-active-banner" role="status">
+              <span aria-hidden="true">✓</span>
+              <div>
+                <strong>Atendimento prioritário ativado</strong>
+                <small>
+                  A senha será identificada como prioritária automaticamente.
+                </small>
+              </div>
+              <button
+                disabled={busy}
+                onClick={() => setPriority(false)}
+                type="button"
+              >
+                Voltar ao atendimento normal
+              </button>
+            </div>
+          ) : null}
+
           <div className="service-grid">
+            {!priority ? (
+              <button
+                className="service-card priority-entry-card"
+                disabled={busy}
+                onClick={() => setPriority(true)}
+                type="button"
+              >
+                <span className="service-icon" aria-hidden="true">
+                  P
+                </span>
+                <span className="service-copy">
+                  <small>Preferência garantida por lei</small>
+                  <strong>Atendimento prioritário</strong>
+                  <span>
+                    Para pessoas idosas, gestantes, PcD e pessoas com criança
+                    de colo
+                  </span>
+                </span>
+                <span className="card-arrow" aria-hidden="true">
+                  →
+                </span>
+              </button>
+            ) : null}
             {queue.services.map((service) => {
               const presentation = servicePresentation(service);
               return (
@@ -914,7 +966,9 @@ export function QueueApp({
                 >
                   <span className="service-icon">{presentation.icon}</span>
                   <span className="service-copy">
-                    <small>{presentation.eyebrow}</small>
+                    <small>
+                      {priority ? "Prioridade ativa" : presentation.eyebrow}
+                    </small>
                     <strong>{service.name}</strong>
                     <span>{presentation.description}</span>
                   </span>
@@ -925,22 +979,6 @@ export function QueueApp({
               );
             })}
           </div>
-
-          <label className="priority-toggle">
-            <input
-              checked={priority}
-              onChange={(event) => setPriority(event.target.checked)}
-              type="checkbox"
-            />
-            <span className="check-mark">✓</span>
-            <span>
-              <strong>Atendimento prioritário</strong>
-              <small>
-                Pessoas com 60+, gestantes, PcD ou com criança de colo
-              </small>
-            </span>
-          </label>
-
         </section>
       ) : initialMode === "display" ? (
         <section className="display-content">

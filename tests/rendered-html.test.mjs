@@ -155,6 +155,23 @@ test("formata a ficha para bobina térmica de 80 mm", async () => {
   assert.match(styles, /\.ticket-paper[\s\S]*width: 80mm/);
 });
 
+test("oferece atendimento prioritário por um card acessível", async () => {
+  const [queueApp, styles] = await Promise.all([
+    readFile(new URL("app/queue-app.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
+  ]);
+
+  assert.match(queueApp, /priority-entry-card/);
+  assert.match(queueApp, /onClick=\{\(\) => setPriority\(true\)\}/);
+  assert.match(queueApp, /priority \? "Prioridade ativa"/);
+  assert.match(queueApp, /serviceId, priority/);
+  assert.match(queueApp, /setPriority\(false\)/);
+  assert.doesNotMatch(queueApp, /className="priority-toggle"/);
+  assert.match(styles, /\.client \.priority-entry-card/);
+  assert.match(styles, /\.priority-active-banner/);
+  assert.doesNotMatch(styles, /\.priority-toggle/);
+});
+
 test("protege os controles locais do terminal", async () => {
   const [queueApp, controller, installer] = await Promise.all([
     readFile(new URL("app/queue-app.tsx", root), "utf8"),
