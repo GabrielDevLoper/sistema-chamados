@@ -487,6 +487,23 @@ export function QueueApp({
     }
   }
 
+  function printCreatedTicket() {
+    if (!createdTicket) return;
+
+    const root = document.documentElement;
+    const cleanup = () => {
+      root.classList.remove("printing-ticket");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    root.classList.add("printing-ticket");
+    window.addEventListener("afterprint", cleanup, { once: true });
+
+    window.requestAnimationFrame(() => {
+      window.print();
+      window.setTimeout(cleanup, 1000);
+    });
+  }
+
   return (
     <main
       className={`app-shell ${initialMode}`}
@@ -1045,7 +1062,7 @@ export function QueueApp({
             <p className="ticket-note">
               Aguarde sua senha aparecer no painel e fique atento à chamada.
             </p>
-            <button className="print-button" onClick={() => window.print()} type="button">
+            <button className="print-button" onClick={printCreatedTicket} type="button">
               Imprimir comprovante
             </button>
             <button className="finish-link" onClick={() => setCreatedTicket(null)} type="button">

@@ -2740,7 +2740,7 @@ button:disabled {
 }
 
 @page {
-  size: 80mm 110mm;
+  size: 80mm 90mm;
   margin: 0;
 }
 
@@ -2749,7 +2749,7 @@ button:disabled {
   body,
   .app-shell {
     background: white !important;
-    height: 110mm !important;
+    height: 90mm !important;
     margin: 0 !important;
     min-height: 0 !important;
     overflow: hidden !important;
@@ -2764,20 +2764,28 @@ button:disabled {
   .ticket-modal {
     background: white;
     display: block;
+    height: 90mm;
     inset: auto;
+    overflow: hidden;
     padding: 0;
     position: static;
+    width: 80mm;
   }
 
   .ticket-paper {
     background: white;
     border-radius: 0;
+    break-after: avoid;
+    break-inside: avoid;
     box-shadow: none;
     color: black;
     font-family: ui-monospace, "Courier New", monospace;
-    height: 110mm;
+    height: 90mm;
     max-width: 80mm;
-    padding: 6mm 4mm 5mm;
+    overflow: hidden;
+    padding: 4mm 3mm 3mm;
+    page-break-after: avoid;
+    page-break-inside: avoid;
     position: static;
     width: 80mm;
   }
@@ -2802,20 +2810,20 @@ button:disabled {
 
   .ticket-paper .brand strong {
     font-family: ui-monospace, "Courier New", monospace;
-    font-size: 15pt;
+    font-size: 14pt;
     line-height: 1.25;
   }
 
   .ticket-paper > p {
     font-size: 9pt;
-    margin: 5mm 0 1mm;
+    margin: 3mm 0 1mm;
   }
 
   .ticket-print-date {
     display: flex !important;
     flex-direction: column;
     gap: 1mm;
-    margin: 5mm 0 3mm !important;
+    margin: 3mm 0 2mm !important;
   }
 
   .ticket-print-date span {
@@ -2830,23 +2838,30 @@ button:disabled {
 
   .printed-code {
     font-family: ui-monospace, "Courier New", monospace;
-    font-size: 38pt;
+    font-size: 34pt;
     letter-spacing: 0;
   }
 
   .printed-service {
-    font-size: 10pt;
+    font-size: 9pt;
     font-weight: 700;
-    margin: 2mm 0;
+    margin: 1mm 0;
+  }
+
+  .ticket-paper em {
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: 700;
+    margin-top: 1mm;
   }
 
   .ticket-divider {
     border-color: black;
-    margin: 4mm 0;
+    margin: 3mm 0;
   }
 
   .ticket-details {
-    gap: 3mm;
+    gap: 2mm;
   }
 
   .ticket-details span {
@@ -2855,13 +2870,13 @@ button:disabled {
 
   .ticket-details strong {
     font-family: ui-monospace, "Courier New", monospace;
-    font-size: 14pt;
+    font-size: 12pt;
   }
 
   .ticket-paper p.ticket-note {
-    font-size: 8pt;
+    font-size: 7.5pt;
     line-height: 1.35;
-    margin: 4mm 0 0;
+    margin: 3mm 0 0;
   }
 
   .close-modal,
