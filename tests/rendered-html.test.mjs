@@ -167,9 +167,11 @@ test("oferece atendimento prioritário por um card acessível", async () => {
   assert.match(queueApp, /serviceId, priority/);
   assert.match(queueApp, /setPriority\(false\)/);
   assert.doesNotMatch(queueApp, /className="priority-toggle"/);
+  assert.doesNotMatch(queueApp, /card-arrow/);
   assert.match(styles, /\.client \.priority-entry-card/);
   assert.match(styles, /\.priority-active-banner/);
   assert.doesNotMatch(styles, /\.priority-toggle/);
+  assert.doesNotMatch(styles, /\.card-arrow/);
 });
 
 test("protege os controles locais do terminal", async () => {

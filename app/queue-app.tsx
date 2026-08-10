@@ -949,9 +949,6 @@ export function QueueApp({
                     de colo
                   </span>
                 </span>
-                <span className="card-arrow" aria-hidden="true">
-                  →
-                </span>
               </button>
             ) : null}
             {queue.services.map((service) => {
@@ -971,9 +968,6 @@ export function QueueApp({
                     </small>
                     <strong>{service.name}</strong>
                     <span>{presentation.description}</span>
-                  </span>
-                  <span className="card-arrow" aria-hidden="true">
-                    →
                   </span>
                 </button>
               );

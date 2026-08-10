@@ -1456,7 +1456,7 @@ input:focus-visible {
   cursor: pointer;
   display: grid;
   gap: 16px;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   min-height: 174px;
   padding: 28px 24px;
   position: relative;
@@ -1523,17 +1523,6 @@ input:focus-visible {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
-}
-
-.card-arrow {
-  color: var(--brand-accent);
-  font-size: 22px;
-  transform: translateX(-2px);
-  transition: 180ms ease;
-}
-
-.service-card:hover .card-arrow {
-  transform: translateX(4px);
 }
 
 .attendant-content {
@@ -2933,11 +2922,6 @@ button:disabled {
     font-size: 13px;
   }
 
-  .client .card-arrow {
-    position: absolute;
-    right: 18px;
-    top: 16px;
-  }
 }
 
 @media (max-width: 620px) {
@@ -3112,7 +3096,7 @@ button:disabled {
 
   .client .service-card {
     gap: 14px;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr;
     justify-items: stretch;
     min-height: 132px;
     text-align: left;
@@ -3123,10 +3107,6 @@ button:disabled {
     width: 56px;
   }
 
-  .client .card-arrow {
-    align-self: center;
-    position: static;
-  }
 }
 
 .client .priority-entry-card {
@@ -3134,7 +3114,7 @@ button:disabled {
   border-color: transparent;
   color: var(--brand-on-primary);
   grid-column: 1 / -1;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   justify-items: stretch;
   min-height: 154px;
   text-align: left;
@@ -3163,8 +3143,7 @@ button:disabled {
 }
 
 .priority-entry-card .service-copy small,
-.priority-entry-card .service-copy > span,
-.priority-entry-card .card-arrow {
+.priority-entry-card .service-copy > span {
   color: var(--brand-on-primary);
 }
 
@@ -3252,7 +3231,7 @@ button:disabled {
 
 @media (max-width: 480px) {
   .client .priority-entry-card {
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr;
   }
 
   .priority-entry-card .service-icon {
