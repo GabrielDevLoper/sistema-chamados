@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $InstallDirectory = Join-Path $env:LOCALAPPDATA "SistemaChamadosKiosk"
 $ControllerSource = Join-Path $PSScriptRoot "kiosk-controller.ps1"
 $ControllerTarget = Join-Path $InstallDirectory "kiosk-controller.ps1"
+$LegacyStartupFile = Join-Path ([Environment]::GetFolderPath("Startup")) "SistemaChamadosKiosk.cmd"
 
 if (!(Test-Path $ControllerSource)) {
   throw "O arquivo kiosk-controller.ps1 deve permanecer ao lado deste instalador."
@@ -16,6 +17,7 @@ Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
 
 New-Item -ItemType Directory -Path $InstallDirectory -Force | Out-Null
 Copy-Item -Path $ControllerSource -Destination $ControllerTarget -Force
+Remove-Item -Path $LegacyStartupFile -Force -ErrorAction SilentlyContinue
 
 Start-Process `
   -FilePath "powershell.exe" `

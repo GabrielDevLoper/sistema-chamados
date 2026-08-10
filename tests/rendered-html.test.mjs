@@ -171,7 +171,8 @@ test("protege os controles locais do terminal", async () => {
   assert.match(controller, /8d969eef6ecad3c29a3a629280e686cf0/);
   assert.match(controller, /RetiradaSenha/);
   assert.doesNotMatch(controller, /shutdown\.exe/);
-  assert.doesNotMatch(installer, /Startup/);
+  assert.doesNotMatch(installer, /WriteAllText/);
+  assert.match(installer, /Remove-Item -Path \$LegacyStartupFile/);
   assert.doesNotMatch(queueApp, /Desligar computador/);
 });
 
