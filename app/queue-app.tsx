@@ -178,6 +178,7 @@ function ModeSwitch({
           >
             Painel público
           </a>
+          <a href="/app/relatorios">Relatórios</a>
           <a
             className={mode === "admin" ? "active" : ""}
             href="/app/configuracoes"

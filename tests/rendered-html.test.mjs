@@ -176,6 +176,26 @@ test("protege os controles locais do terminal", async () => {
   assert.doesNotMatch(queueApp, /Desligar computador/);
 });
 
+test("gera histórico de atendimentos por dia e período", async () => {
+  const [reportsDb, reportsPage, reportsRoute, organizationHome] =
+    await Promise.all([
+      readFile(new URL("db/reports.ts", root), "utf8"),
+      readFile(new URL("app/app/relatorios/page.tsx", root), "utf8"),
+      readFile(new URL("app/api/app/reports/route.ts", root), "utf8"),
+      readFile(new URL("app/app/page.tsx", root), "utf8"),
+    ]);
+
+  assert.match(reportsDb, /service_date BETWEEN \? AND \?/);
+  assert.match(reportsDb, /status = 'finished'/);
+  assert.match(reportsDb, /status = 'no_show'/);
+  assert.match(reportsDb, /GROUP BY service_date/);
+  assert.match(reportsDb, /GROUP BY service/);
+  assert.match(reportsPage, /Resultado por dia/);
+  assert.match(reportsPage, /Resultado por serviço/);
+  assert.match(reportsRoute, /authorizeOrganization\(request\)/);
+  assert.match(organizationHome, /href="\/app\/relatorios"/);
+});
+
 test("deriva uma paleta acessível da cor primária da organização", async () => {
   const [theme, queueApp, styles] = await Promise.all([
     readFile(new URL("app/brand-theme.ts", root), "utf8"),
