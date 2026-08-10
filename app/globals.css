@@ -1118,20 +1118,6 @@ input:focus-visible {
   font-size: 10px;
 }
 
-.client-footer {
-  align-items: center;
-  color: var(--muted);
-  display: flex;
-  font-size: 12px;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 35px;
-}
-
-.client-footer strong {
-  color: var(--deep);
-}
-
 .attendant-content {
   display: grid;
   grid-template-columns: minmax(290px, 25vw) 1fr;
@@ -2534,10 +2520,6 @@ button:disabled {
   .brand-preview aside i {
     flex: 0 0 auto;
     margin: 0;
-  }
-
-  .client-footer {
-    flex-wrap: wrap;
   }
 
   .attendant-main {

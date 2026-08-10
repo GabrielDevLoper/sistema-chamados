@@ -146,6 +146,7 @@ test("formata a ficha para bobina térmica de 80 mm", async () => {
   assert.match(queueApp, /setCreatedTicket\(null\)/);
   assert.doesNotMatch(queueApp, /Imprimir comprovante|role="dialog"/);
   assert.doesNotMatch(queueApp, /Tempo estimado|Tempo médio|Previsão/);
+  assert.doesNotMatch(queueApp, /client-footer|Sem pessoas aguardando/);
   assert.match(styles, /@page\s*{[\s\S]*size: 80mm 90mm/);
   assert.match(styles, /\.app-shell > \*:not\(\.ticket-print-layer\)/);
   assert.match(styles, /\.ticket-paper[\s\S]*width: 80mm/);

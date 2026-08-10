@@ -798,13 +798,6 @@ export function QueueApp({
             </span>
           </label>
 
-          <div className="client-footer">
-            <strong>
-              {queue.waiting === 0
-                ? "Sem pessoas aguardando"
-                : `${queue.waiting} ${queue.waiting === 1 ? "pessoa aguardando" : "pessoas aguardando"}`}
-            </strong>
-          </div>
         </section>
       ) : initialMode === "display" ? (
         <section className="display-content">
