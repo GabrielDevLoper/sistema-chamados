@@ -123,6 +123,8 @@ test("formata a ficha para bobina térmica de 80 mm", async () => {
   assert.match(queueApp, /printCreatedTicket/);
   assert.match(queueApp, /requestAnimationFrame/);
   assert.match(queueApp, /window\.print\(\)/);
+  assert.match(queueApp, /afterprint/);
+  assert.match(queueApp, /setCreatedTicket\(null\)/);
   assert.doesNotMatch(queueApp, /Tempo estimado|Tempo médio|Previsão/);
   assert.match(styles, /@page\s*{[\s\S]*size: 80mm 90mm/);
   assert.match(styles, /\.app-shell > \*:not\(\.ticket-modal\)/);

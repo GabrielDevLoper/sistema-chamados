@@ -432,16 +432,6 @@ export function QueueApp({
       ),
     [queue.tickets],
   );
-  const peopleAhead = createdTicket
-    ? queue.tickets.filter(
-        (ticket) =>
-          ticket.status === "waiting" &&
-          ticket.id < createdTicket.id &&
-          (ticket.priority >= createdTicket.priority ||
-            createdTicket.priority === 0),
-      ).length
-    : 0;
-
   const announceTicket = useCallback((ticket: Ticket) => {
     if (!ticket.desk) return;
 
@@ -528,13 +518,13 @@ export function QueueApp({
     const cleanup = () => {
       root.classList.remove("printing-ticket");
       window.removeEventListener("afterprint", cleanup);
+      setCreatedTicket(null);
     };
     root.classList.add("printing-ticket");
     window.addEventListener("afterprint", cleanup, { once: true });
 
     window.requestAnimationFrame(() => {
       window.print();
-      window.setTimeout(cleanup, 1000);
     });
   }
 
