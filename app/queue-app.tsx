@@ -6,7 +6,10 @@ import { brandThemeStyle } from "./brand-theme";
 import type { QueuePayload, QueueService, Ticket } from "../db/types";
 
 type Mode = "client" | "attendant" | "display" | "admin";
+type TerminalAction = "close" | "shutdown";
 type PublicOrganization = QueuePayload["organization"];
+
+const KIOSK_CONTROLLER_URL = "http://127.0.0.1:17865/control";
 
 const SERVICE_PRESENTATION: Record<
   string,
@@ -248,6 +251,13 @@ export function QueueApp({
   >("default");
   const [deskCountDraft, setDeskCountDraft] = useState(4);
   const [savedMessage, setSavedMessage] = useState("");
+  const [terminalControlsOpen, setTerminalControlsOpen] = useState(false);
+  const [terminalPin, setTerminalPin] = useState("");
+  const [terminalAction, setTerminalAction] = useState<TerminalAction | null>(
+    null,
+  );
+  const [terminalBusy, setTerminalBusy] = useState(false);
+  const [terminalError, setTerminalError] = useState("");
   const announcedCall = useRef<string | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const adminConfigLoaded = useRef(false);
@@ -446,6 +456,45 @@ export function QueueApp({
       setError(
         "As notificações foram bloqueadas. Libere-as nas configurações do navegador.",
       );
+    }
+  }
+
+  function closeTerminalControls() {
+    if (terminalBusy) return;
+    setTerminalControlsOpen(false);
+    setTerminalAction(null);
+    setTerminalError("");
+    setTerminalPin("");
+  }
+
+  async function executeTerminalAction() {
+    if (!terminalAction || terminalPin.length < 6) {
+      setTerminalError("Informe o PIN administrativo.");
+      return;
+    }
+
+    setTerminalBusy(true);
+    setTerminalError("");
+    try {
+      const response = await fetch(KIOSK_CONTROLLER_URL, {
+        body: JSON.stringify({ action: terminalAction, pin: terminalPin }),
+        cache: "no-store",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || "Comando recusado pelo computador.");
+      }
+    } catch (terminalRequestError) {
+      setTerminalError(
+        terminalRequestError instanceof TypeError
+          ? "Controlador do Windows não encontrado. Execute o instalador local."
+          : terminalRequestError instanceof Error
+            ? terminalRequestError.message
+            : "Não foi possível executar o comando.",
+      );
+      setTerminalBusy(false);
     }
   }
 
@@ -824,6 +873,15 @@ export function QueueApp({
                   {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
                 </span>
               </button>
+              <button
+                aria-label="Controles do terminal"
+                className="client-terminal-button"
+                onClick={() => setTerminalControlsOpen(true)}
+                type="button"
+              >
+                <span aria-hidden="true">⏻</span>
+                <span className="client-fullscreen-label">Terminal</span>
+              </button>
             </div>
           ) : (
             <div className="top-meta">
@@ -1196,6 +1254,118 @@ export function QueueApp({
           </div>
         </section>
       )}
+
+      {initialMode === "client" && terminalControlsOpen ? (
+        <div className="terminal-overlay">
+          <section
+            aria-labelledby="terminal-controls-title"
+            aria-modal="true"
+            className="terminal-dialog"
+            role="dialog"
+          >
+            <button
+              aria-label="Fechar controles do terminal"
+              className="terminal-dialog-close"
+              disabled={terminalBusy}
+              onClick={closeTerminalControls}
+              type="button"
+            >
+              ×
+            </button>
+            <p className="kicker">Acesso administrativo</p>
+            <h2 id="terminal-controls-title">Controle do terminal</h2>
+
+            {terminalAction ? (
+              <div className="terminal-confirmation">
+                <span aria-hidden="true">
+                  {terminalAction === "shutdown" ? "⏻" : "×"}
+                </span>
+                <strong>
+                  {terminalAction === "shutdown"
+                    ? "Desligar este computador?"
+                    : "Fechar a tela de retirada?"}
+                </strong>
+                <p>
+                  {terminalAction === "shutdown"
+                    ? "O Windows será desligado e todos os programas abertos serão encerrados."
+                    : "Somente o Chrome vertical da retirada de senha será fechado."}
+                </p>
+                <div className="terminal-confirmation-actions">
+                  <button
+                    className="secondary-button"
+                    disabled={terminalBusy}
+                    onClick={() => setTerminalAction(null)}
+                    type="button"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    className={
+                      terminalAction === "shutdown"
+                        ? "terminal-danger-button"
+                        : "primary-button"
+                    }
+                    disabled={terminalBusy}
+                    onClick={executeTerminalAction}
+                    type="button"
+                  >
+                    {terminalBusy
+                      ? "Executando…"
+                      : terminalAction === "shutdown"
+                        ? "Confirmar desligamento"
+                        : "Confirmar fechamento"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <label className="terminal-pin-field">
+                  <span>PIN administrativo</span>
+                  <input
+                    autoComplete="off"
+                    autoFocus
+                    inputMode="numeric"
+                    maxLength={12}
+                    onChange={(event) =>
+                      setTerminalPin(event.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder="Digite o PIN"
+                    type="password"
+                    value={terminalPin}
+                  />
+                </label>
+                <div className="terminal-action-grid">
+                  <button
+                    disabled={terminalPin.length < 6}
+                    onClick={() => setTerminalAction("close")}
+                    type="button"
+                  >
+                    <span aria-hidden="true">×</span>
+                    <strong>Fechar terminal</strong>
+                    <small>Fecha somente esta tela vertical</small>
+                  </button>
+                  <button
+                    className="danger"
+                    disabled={terminalPin.length < 6}
+                    onClick={() => setTerminalAction("shutdown")}
+                    type="button"
+                  >
+                    <span aria-hidden="true">⏻</span>
+                    <strong>Desligar computador</strong>
+                    <small>Encerra o Windows com segurança</small>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {terminalError ? (
+              <p className="terminal-error" role="alert">
+                {terminalError}
+              </p>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
 
       {error ? (
         <div className="error-toast" role="alert">

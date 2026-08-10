@@ -132,3 +132,28 @@ são separados dos dados publicados.
 - bloqueio temporário após tentativas repetidas;
 - organização sempre derivada da sessão nas APIs privadas;
 - logos validadas e armazenadas no R2.
+
+## Controles do terminal Windows
+
+A tela pública de retirada de senha possui controles protegidos por PIN para
+fechar apenas o Chrome vertical ou desligar o computador. Como páginas web não
+podem executar comandos do Windows diretamente, o computador do totem precisa
+do controlador local incluído em `scripts/windows`.
+
+No computador Windows, mantenha os dois arquivos de instalação na mesma pasta
+e execute o PowerShell como o usuário do terminal:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\install-kiosk-controller.ps1
+```
+
+O instalador copia o controlador para o perfil local do Windows, inicia o
+processo e adiciona sua inicialização automática. O PIN configurado é `123456`.
+Para que **Fechar terminal** encerre somente a tela vertical, o atalho do Chrome
+deve continuar usando um `--user-data-dir` cujo nome contenha `RetiradaSenha`.
+
+Para remover o controlador:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\uninstall-kiosk-controller.ps1
+```

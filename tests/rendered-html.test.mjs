@@ -147,12 +147,31 @@ test("formata a ficha para bobina térmica de 80 mm", async () => {
   assert.match(queueApp, /window\.print\(\)/);
   assert.match(queueApp, /afterprint/);
   assert.match(queueApp, /setCreatedTicket\(null\)/);
-  assert.doesNotMatch(queueApp, /Imprimir comprovante|role="dialog"/);
+  assert.doesNotMatch(queueApp, /Imprimir comprovante/);
   assert.doesNotMatch(queueApp, /Tempo estimado|Tempo médio|Previsão/);
   assert.doesNotMatch(queueApp, /client-footer|Sem pessoas aguardando/);
   assert.match(styles, /@page\s*{[\s\S]*size: 80mm 90mm/);
   assert.match(styles, /\.app-shell > \*:not\(\.ticket-print-layer\)/);
   assert.match(styles, /\.ticket-paper[\s\S]*width: 80mm/);
+});
+
+test("protege os controles locais do terminal", async () => {
+  const [queueApp, controller, installer] = await Promise.all([
+    readFile(new URL("app/queue-app.tsx", root), "utf8"),
+    readFile(new URL("scripts/windows/kiosk-controller.ps1", root), "utf8"),
+    readFile(
+      new URL("scripts/windows/install-kiosk-controller.ps1", root),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(queueApp, /127\.0\.0\.1:17865\/control/);
+  assert.match(queueApp, /terminalPin/);
+  assert.doesNotMatch(queueApp, /123456/);
+  assert.match(controller, /8d969eef6ecad3c29a3a629280e686cf0/);
+  assert.match(controller, /RetiradaSenha/);
+  assert.match(controller, /shutdown\.exe/);
+  assert.match(installer, /Startup/);
 });
 
 test("deriva uma paleta acessível da cor primária da organização", async () => {

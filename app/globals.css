@@ -909,6 +909,31 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+.client-terminal-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--brand-border);
+  border-radius: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+}
+
+.client-terminal-button:hover {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.client-terminal-button > span:first-child {
+  font-size: 18px;
+}
+
 .client-fullscreen-button:hover,
 .client-fullscreen-button[aria-pressed="true"] {
   background: var(--brand-primary);
@@ -943,6 +968,185 @@ input:focus-visible {
   max-width: 1180px;
   padding: clamp(48px, 7vh, 90px) 30px 40px;
   text-align: center;
+}
+
+.terminal-overlay {
+  align-items: center;
+  background: rgba(10, 24, 22, 0.72);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 100;
+}
+
+.terminal-dialog {
+  background: var(--paper);
+  border: 1px solid var(--brand-border);
+  border-radius: 16px;
+  box-shadow: 0 26px 80px rgba(10, 24, 22, 0.3);
+  max-width: 540px;
+  padding: 34px;
+  position: relative;
+  text-align: left;
+  width: 100%;
+}
+
+.terminal-dialog h2 {
+  font-family: var(--font-serif), serif;
+  font-size: 32px;
+  font-weight: 400;
+  margin: 0 0 24px;
+}
+
+.terminal-dialog-close {
+  align-items: center;
+  background: var(--brand-soft);
+  border: 0;
+  border-radius: 50%;
+  color: var(--brand-strong);
+  cursor: pointer;
+  display: flex;
+  font-size: 23px;
+  height: 38px;
+  justify-content: center;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 38px;
+}
+
+.terminal-pin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.terminal-pin-field span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.terminal-pin-field input {
+  border: 1px solid var(--brand-border);
+  border-radius: 9px;
+  font-size: 21px;
+  letter-spacing: 0.2em;
+  padding: 14px 16px;
+  width: 100%;
+}
+
+.terminal-action-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 20px;
+}
+
+.terminal-action-grid button {
+  align-items: flex-start;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-border);
+  border-radius: 10px;
+  color: var(--brand-strong);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 128px;
+  padding: 18px;
+  text-align: left;
+}
+
+.terminal-action-grid button.danger {
+  background: #fff1ee;
+  border-color: #edc3ba;
+  color: #9e3325;
+}
+
+.terminal-action-grid button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.terminal-action-grid button > span {
+  font-size: 25px;
+  line-height: 1;
+}
+
+.terminal-action-grid strong {
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.terminal-action-grid small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.terminal-confirmation {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+.terminal-confirmation > span {
+  align-items: center;
+  background: #fff1ee;
+  border-radius: 50%;
+  color: #9e3325;
+  display: flex;
+  font-size: 35px;
+  height: 72px;
+  justify-content: center;
+  margin-bottom: 18px;
+  width: 72px;
+}
+
+.terminal-confirmation > strong {
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.terminal-confirmation > p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 10px auto 22px;
+  max-width: 400px;
+}
+
+.terminal-confirmation-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.terminal-danger-button {
+  background: #a53527;
+  border: 1px solid #a53527;
+  border-radius: 7px;
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 13px 18px;
+}
+
+.terminal-error {
+  background: #fff1ee;
+  border: 1px solid #edc3ba;
+  border-radius: 8px;
+  color: #9e3325;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 18px 0 0;
+  padding: 11px 13px;
 }
 
 .kicker {
@@ -2551,6 +2755,20 @@ button:disabled {
     justify-content: center;
     padding: 10px;
     width: 44px;
+  }
+
+  .client-terminal-button {
+    justify-content: center;
+    padding: 10px;
+    width: 44px;
+  }
+
+  .terminal-dialog {
+    padding: 28px 20px;
+  }
+
+  .terminal-action-grid {
+    grid-template-columns: 1fr;
   }
 
   .priority-toggle {
