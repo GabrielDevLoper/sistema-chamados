@@ -1345,8 +1345,7 @@ input:focus-visible {
 
 .primary-button,
 .secondary-button,
-.ghost-button,
-.print-button {
+.ghost-button {
   border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
@@ -1572,15 +1571,8 @@ button:disabled {
   font-size: 18px;
 }
 
-.ticket-modal {
-  align-items: center;
-  background: rgba(10, 39, 36, 0.8);
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  padding: 20px;
-  position: fixed;
-  z-index: 50;
+.ticket-print-layer {
+  display: none;
 }
 
 .ticket-paper {
@@ -1595,20 +1587,6 @@ button:disabled {
   position: relative;
   text-align: center;
   width: 100%;
-}
-
-.close-modal {
-  background: #edf0e9;
-  border: 0;
-  border-radius: 50%;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 19px;
-  height: 34px;
-  position: absolute;
-  right: 18px;
-  top: 18px;
-  width: 34px;
 }
 
 .ticket-paper > p {
@@ -1669,23 +1647,6 @@ button:disabled {
   line-height: 1.55;
   margin: 24px 0 20px;
   max-width: 280px;
-}
-
-.print-button {
-  background: var(--deep);
-  border: 1px solid var(--deep);
-  color: white;
-  width: 100%;
-}
-
-.finish-link {
-  background: transparent;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 11px;
-  margin-top: 14px;
-  text-decoration: underline;
 }
 
 .admin-content {
@@ -2729,11 +2690,11 @@ button:disabled {
     width: 80mm !important;
   }
 
-  .app-shell > *:not(.ticket-modal) {
+  .app-shell > *:not(.ticket-print-layer) {
     display: none !important;
   }
 
-  .ticket-modal {
+  .ticket-print-layer {
     background: white;
     display: block;
     height: 90mm;
@@ -2851,11 +2812,6 @@ button:disabled {
     margin: 3mm 0 0;
   }
 
-  .close-modal,
-  .print-button,
-  .finish-link {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

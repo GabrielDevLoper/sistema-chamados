@@ -299,6 +299,30 @@ export function QueueApp({
   }, []);
 
   useEffect(() => {
+    if (initialMode !== "client" || !createdTicket) return;
+
+    const root = document.documentElement;
+    const finishPrinting = () => setCreatedTicket(null);
+    root.classList.add("printing-ticket");
+    window.addEventListener("afterprint", finishPrinting, { once: true });
+
+    const printFrame = window.requestAnimationFrame(() => {
+      try {
+        window.print();
+      } catch {
+        setError("Não foi possível imprimir o comprovante.");
+        setCreatedTicket(null);
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(printFrame);
+      window.removeEventListener("afterprint", finishPrinting);
+      root.classList.remove("printing-ticket");
+    };
+  }, [createdTicket, initialMode]);
+
+  useEffect(() => {
     if (!adminConfigLoaded.current && queue.desks.length) {
       setDeskCountDraft(queue.desks.length);
       adminConfigLoaded.current = true;
@@ -509,23 +533,6 @@ export function QueueApp({
     } catch {
       setError("Não foi possível ativar a tela cheia neste dispositivo.");
     }
-  }
-
-  function printCreatedTicket() {
-    if (!createdTicket) return;
-
-    const root = document.documentElement;
-    const cleanup = () => {
-      root.classList.remove("printing-ticket");
-      window.removeEventListener("afterprint", cleanup);
-      setCreatedTicket(null);
-    };
-    root.classList.add("printing-ticket");
-    window.addEventListener("afterprint", cleanup, { once: true });
-
-    window.requestAnimationFrame(() => {
-      window.print();
-    });
   }
 
   return (
@@ -1096,16 +1103,8 @@ export function QueueApp({
       ) : null}
 
       {createdTicket ? (
-        <div className="ticket-modal" role="dialog" aria-modal="true">
+        <div aria-hidden="true" className="ticket-print-layer">
           <div className="ticket-paper">
-            <button
-              aria-label="Fechar comprovante"
-              className="close-modal"
-              onClick={() => setCreatedTicket(null)}
-              type="button"
-            >
-              ×
-            </button>
             <Logo organization={queue.organization} />
             <p className="ticket-print-date">
               <span>Data/Hora</span>
@@ -1123,20 +1122,6 @@ export function QueueApp({
             <p className="ticket-note">
               Aguarde sua senha aparecer no painel e fique atento à chamada.
             </p>
-            <button
-              className="print-button"
-              onClick={printCreatedTicket}
-              type="button"
-            >
-              Imprimir comprovante
-            </button>
-            <button
-              className="finish-link"
-              onClick={() => setCreatedTicket(null)}
-              type="button"
-            >
-              Concluir
-            </button>
           </div>
         </div>
       ) : null}
