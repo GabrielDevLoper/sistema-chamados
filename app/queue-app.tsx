@@ -665,6 +665,15 @@ export function QueueApp({
             <button onClick={toggleFullscreen} type="button">
               {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
             </button>
+            <button
+              aria-label="Fechar esta guia"
+              className="display-close-tab-button"
+              onClick={closeCurrentTab}
+              type="button"
+            >
+              <span aria-hidden="true">×</span>
+              Fechar guia
+            </button>
           </div>
         </header>
       ) : initialMode === "admin" ? (

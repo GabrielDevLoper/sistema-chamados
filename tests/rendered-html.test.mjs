@@ -183,6 +183,7 @@ test("fecha somente a guia atual sem PIN ou controlador local", async () => {
   assert.match(queueApp, /function closeCurrentTab\(\)/);
   assert.match(queueApp, /window\.close\(\)/);
   assert.match(queueApp, /Fechar esta guia/);
+  assert.match(queueApp, /display-close-tab-button/);
   assert.match(queueApp, /Use Ctrl\+W para fechar esta guia/);
   assert.doesNotMatch(queueApp, /terminalPin|KIOSK_CONTROLLER|127\.0\.0\.1:17865/);
   assert.doesNotMatch(queueApp, /Controle do terminal|PIN administrativo/);

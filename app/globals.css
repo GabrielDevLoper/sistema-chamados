@@ -2278,6 +2278,18 @@ button:disabled {
   opacity: 1;
 }
 
+.display-controls .display-close-tab-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+}
+
+.display-close-tab-button span {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 0.8;
+}
+
 .display-content {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(330px, 29vw);
