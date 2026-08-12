@@ -8,8 +8,6 @@ import type { QueuePayload, QueueService, Ticket } from "../db/types";
 type Mode = "client" | "attendant" | "display" | "admin";
 type PublicOrganization = QueuePayload["organization"];
 
-const KIOSK_CONTROLLER_URL = "http://127.0.0.1:17865/control";
-
 const SERVICE_PRESENTATION: Record<
   string,
   {
@@ -251,11 +249,6 @@ export function QueueApp({
   >("default");
   const [deskCountDraft, setDeskCountDraft] = useState(4);
   const [savedMessage, setSavedMessage] = useState("");
-  const [terminalControlsOpen, setTerminalControlsOpen] = useState(false);
-  const [terminalPin, setTerminalPin] = useState("");
-  const [terminalConfirming, setTerminalConfirming] = useState(false);
-  const [terminalBusy, setTerminalBusy] = useState(false);
-  const [terminalError, setTerminalError] = useState("");
   const announcedCall = useRef<string | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const adminConfigLoaded = useRef(false);
@@ -461,43 +454,14 @@ export function QueueApp({
     }
   }
 
-  function closeTerminalControls() {
-    if (terminalBusy) return;
-    setTerminalControlsOpen(false);
-    setTerminalConfirming(false);
-    setTerminalError("");
-    setTerminalPin("");
-  }
-
-  async function executeTerminalClose() {
-    if (terminalPin.length < 6) {
-      setTerminalError("Informe o PIN administrativo.");
-      return;
-    }
-
-    setTerminalBusy(true);
-    setTerminalError("");
-    try {
-      const response = await fetch(KIOSK_CONTROLLER_URL, {
-        body: JSON.stringify({ action: "close", pin: terminalPin }),
-        cache: "no-store",
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      });
-      const result = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(result.error || "Comando recusado pelo computador.");
-      }
-    } catch (terminalRequestError) {
-      setTerminalError(
-        terminalRequestError instanceof TypeError
-          ? "Controlador do Windows não encontrado. Execute o instalador local."
-          : terminalRequestError instanceof Error
-            ? terminalRequestError.message
-            : "Não foi possível executar o comando.",
+  function closeCurrentTab() {
+    setError("");
+    window.close();
+    window.setTimeout(() => {
+      setError(
+        "O navegador bloqueou o fechamento automático. Use Ctrl+W para fechar esta guia.",
       );
-      setTerminalBusy(false);
-    }
+    }, 300);
   }
 
   async function saveDeskConfiguration() {
@@ -876,13 +840,13 @@ export function QueueApp({
                 </span>
               </button>
               <button
-                aria-label="Controles do terminal"
-                className="client-terminal-button"
-                onClick={() => setTerminalControlsOpen(true)}
+                aria-label="Fechar esta guia"
+                className="client-close-tab-button"
+                onClick={closeCurrentTab}
                 type="button"
               >
-                <span aria-hidden="true">⏻</span>
-                <span className="client-fullscreen-label">Terminal</span>
+                <span aria-hidden="true">×</span>
+                <span className="client-fullscreen-label">Fechar guia</span>
               </button>
             </div>
           ) : (
@@ -1284,94 +1248,6 @@ export function QueueApp({
           </div>
         </section>
       )}
-
-      {initialMode === "client" && terminalControlsOpen ? (
-        <div className="terminal-overlay">
-          <section
-            aria-labelledby="terminal-controls-title"
-            aria-modal="true"
-            className="terminal-dialog"
-            role="dialog"
-          >
-            <button
-              aria-label="Fechar controles do terminal"
-              className="terminal-dialog-close"
-              disabled={terminalBusy}
-              onClick={closeTerminalControls}
-              type="button"
-            >
-              ×
-            </button>
-            <p className="kicker">Acesso administrativo</p>
-            <h2 id="terminal-controls-title">Controle do terminal</h2>
-
-            {terminalConfirming ? (
-              <div className="terminal-confirmation">
-                <span aria-hidden="true">×</span>
-                <strong>Fechar a tela de retirada?</strong>
-                <p>
-                  Somente o Chrome vertical da retirada de senha será fechado.
-                  O painel horizontal continuará aberto.
-                </p>
-                <div className="terminal-confirmation-actions">
-                  <button
-                    className="secondary-button"
-                    disabled={terminalBusy}
-                    onClick={() => setTerminalConfirming(false)}
-                    type="button"
-                  >
-                    Voltar
-                  </button>
-                  <button
-                    className="primary-button"
-                    disabled={terminalBusy}
-                    onClick={executeTerminalClose}
-                    type="button"
-                  >
-                    {terminalBusy ? "Fechando…" : "Confirmar fechamento"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <label className="terminal-pin-field">
-                  <span>PIN administrativo</span>
-                  <input
-                    autoComplete="off"
-                    autoFocus
-                    inputMode="numeric"
-                    maxLength={12}
-                    onChange={(event) =>
-                      setTerminalPin(event.target.value.replace(/\D/g, ""))
-                    }
-                    placeholder="Digite o PIN"
-                    type="password"
-                    value={terminalPin}
-                  />
-                </label>
-                <button
-                  className="terminal-close-button"
-                  disabled={terminalPin.length < 6}
-                  onClick={() => setTerminalConfirming(true)}
-                  type="button"
-                >
-                  <span aria-hidden="true">×</span>
-                  <span>
-                    <strong>Fechar navegador</strong>
-                    <small>Fecha somente esta tela vertical</small>
-                  </span>
-                </button>
-              </>
-            )}
-
-            {terminalError ? (
-              <p className="terminal-error" role="alert">
-                {terminalError}
-              </p>
-            ) : null}
-          </section>
-        </div>
-      ) : null}
 
       {error ? (
         <div className="error-toast" role="alert">

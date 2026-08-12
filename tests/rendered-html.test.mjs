@@ -174,25 +174,18 @@ test("oferece atendimento prioritário por um card acessível", async () => {
   assert.doesNotMatch(styles, /\.card-arrow/);
 });
 
-test("protege os controles locais do terminal", async () => {
-  const [queueApp, controller, installer] = await Promise.all([
-    readFile(new URL("app/queue-app.tsx", root), "utf8"),
-    readFile(new URL("scripts/windows/kiosk-controller.ps1", root), "utf8"),
-    readFile(
-      new URL("scripts/windows/install-kiosk-controller.ps1", root),
-      "utf8",
-    ),
-  ]);
+test("fecha somente a guia atual sem PIN ou controlador local", async () => {
+  const queueApp = await readFile(
+    new URL("app/queue-app.tsx", root),
+    "utf8",
+  );
 
-  assert.match(queueApp, /127\.0\.0\.1:17865\/control/);
-  assert.match(queueApp, /terminalPin/);
-  assert.doesNotMatch(queueApp, /123456/);
-  assert.match(controller, /8d969eef6ecad3c29a3a629280e686cf0/);
-  assert.match(controller, /RetiradaSenha/);
-  assert.doesNotMatch(controller, /shutdown\.exe/);
-  assert.doesNotMatch(installer, /WriteAllText/);
-  assert.match(installer, /Remove-Item -Path \$LegacyStartupFile/);
-  assert.doesNotMatch(queueApp, /Desligar computador/);
+  assert.match(queueApp, /function closeCurrentTab\(\)/);
+  assert.match(queueApp, /window\.close\(\)/);
+  assert.match(queueApp, /Fechar esta guia/);
+  assert.match(queueApp, /Use Ctrl\+W para fechar esta guia/);
+  assert.doesNotMatch(queueApp, /terminalPin|KIOSK_CONTROLLER|127\.0\.0\.1:17865/);
+  assert.doesNotMatch(queueApp, /Controle do terminal|PIN administrativo/);
 });
 
 test("gera histórico de atendimentos por dia e período", async () => {
