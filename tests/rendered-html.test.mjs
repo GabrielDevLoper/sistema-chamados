@@ -22,6 +22,7 @@ test("entrega rotas públicas e painéis autenticados por organização", async 
   assert.match(queueApp, /Notification\.requestPermission/);
   assert.match(queueApp, /new Notification\(`Nova senha:/);
   assert.match(queueApp, /knownTicketIds/);
+  assert.match(queueApp, /initialMode !== "client" \? \(/);
   assert.match(organizationHome, /Atender a fila/);
   assert.doesNotMatch(queueApp, /Alta Serra/);
   assert.match(layout, /Atendimento simples\. Filas organizadas\./);

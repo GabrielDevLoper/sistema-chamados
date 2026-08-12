@@ -820,11 +820,13 @@ export function QueueApp({
       ) : (
         <header className="topbar">
           <Logo organization={queue.organization} />
-          <ModeSwitch
-            mode={initialMode}
-            organizationSlug={organizationSlug}
-            authenticated={authenticated}
-          />
+          {initialMode !== "client" ? (
+            <ModeSwitch
+              mode={initialMode}
+              organizationSlug={organizationSlug}
+              authenticated={authenticated}
+            />
+          ) : null}
           {initialMode === "client" ? (
             <div className="client-top-actions">
               <div className="top-meta">
