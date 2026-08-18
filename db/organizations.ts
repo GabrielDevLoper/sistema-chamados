@@ -9,6 +9,8 @@ type OrganizationRow = {
   slug: string;
   business_type: string;
   logo_key: string | null;
+  display_logo_key: string | null;
+  display_background_key: string | null;
   primary_color: string;
   timezone: string;
   status: Organization["status"];
@@ -23,6 +25,8 @@ function mapOrganization(row: OrganizationRow): Organization {
     slug: row.slug,
     businessType: row.business_type,
     logoKey: row.logo_key,
+    displayLogoKey: row.display_logo_key,
+    displayBackgroundKey: row.display_background_key,
     primaryColor: row.primary_color,
     timezone: row.timezone,
     status: row.status,

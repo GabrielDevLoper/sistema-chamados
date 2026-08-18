@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
 import type { OrganizationSummary } from "../../../db/platform";
 import { brandThemeStyle } from "../../brand-theme";
+import { publicOrganizationAssetUrl } from "../../organization-media";
 
 export function OrganizationForm({
   organization,
@@ -13,6 +15,8 @@ export function OrganizationForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [activeLogoKey, setActiveLogoKey] = useState(organization?.logoKey ?? null);
+  const [activeDisplayLogoKey, setActiveDisplayLogoKey] = useState(organization?.displayLogoKey ?? null);
   const [previewColor, setPreviewColor] = useState(
     organization?.primaryColor ?? "#1F5B55"
   );
@@ -23,8 +27,9 @@ export function OrganizationForm({
     setError("");
     setSaved(false);
     const logo = formData.get("logo");
+    const displayLogo = formData.get("displayLogo");
     const payload = Object.fromEntries(
-      [...formData.entries()].filter(([name]) => name !== "logo")
+      [...formData.entries()].filter(([name]) => name !== "logo" && name !== "displayLogo")
     );
     try {
       const response = await fetch(
@@ -50,8 +55,29 @@ export function OrganizationForm({
           `/api/platform/organizations/${organizationId}/logo`,
           { method: "PUT", body: logoForm }
         );
-        const logoData = (await logoResponse.json()) as { error?: string };
+        const logoData = (await logoResponse.json()) as { error?: string; logoKey?: string };
         if (!logoResponse.ok) throw new Error(logoData.error || "Não foi possível enviar a logo.");
+        if (typeof logoData.logoKey === "string") {
+          setActiveLogoKey(logoData.logoKey);
+        }
+      }
+      if (displayLogo instanceof File && displayLogo.size > 0 && organizationId) {
+        const displayLogoForm = new FormData();
+        displayLogoForm.set("displayLogo", displayLogo);
+        const displayLogoResponse = await fetch(
+          `/api/platform/organizations/${organizationId}/display-logo`,
+          { method: "PUT", body: displayLogoForm },
+        );
+        const displayLogoData = (await displayLogoResponse.json()) as {
+          error?: string;
+          displayLogoKey?: string;
+        };
+        if (!displayLogoResponse.ok) {
+          throw new Error(displayLogoData.error || "Não foi possível enviar a logo do painel.");
+        }
+        if (typeof displayLogoData.displayLogoKey === "string") {
+          setActiveDisplayLogoKey(displayLogoData.displayLogoKey);
+        }
       }
       if (!editing && organizationId) {
         window.location.href = `/plataforma/organizacoes/${organizationId}`;
@@ -64,6 +90,13 @@ export function OrganizationForm({
       setBusy(false);
     }
   }
+
+  const activeLogoUrl = organization
+    ? publicOrganizationAssetUrl(organization.slug, "logo", activeLogoKey)
+    : undefined;
+  const activeDisplayLogoUrl = organization
+    ? publicOrganizationAssetUrl(organization.slug, "display-logo", activeDisplayLogoKey)
+    : undefined;
 
   return (
     <form
@@ -126,9 +159,42 @@ export function OrganizationForm({
           <span>E-mail de acesso</span>
           <input defaultValue={organization?.accountEmail ?? ""} maxLength={254} name="accountEmail" required type="email" />
         </label>
-        <label>
-          <span>Logo</span>
+        <label className="platform-logo-field">
+          <span>Logo da retirada de senhas</span>
           <input accept="image/png,image/jpeg,image/webp" name="logo" type="file" />
+          {activeLogoUrl ? (
+            <span className="active-logo-preview">
+              <small>Logo ativa</small>
+              <Image
+                alt={`Logo ativa da ${organization?.tradeName ?? "organização"}`}
+                height={72}
+                src={activeLogoUrl}
+                unoptimized
+                width={180}
+              />
+            </span>
+          ) : (
+            <small className="active-logo-empty">Nenhuma logo ativa cadastrada.</small>
+          )}
+          <small>PNG, JPEG ou WebP; até 2 MB e 2048 × 2048.</small>
+        </label>
+        <label className="platform-logo-field">
+          <span>Logo do painel de chamados</span>
+          <input accept="image/png,image/jpeg,image/webp" name="displayLogo" type="file" />
+          {activeDisplayLogoUrl ? (
+            <span className="active-logo-preview">
+              <small>Logo ativa do painel</small>
+              <Image
+                alt={`Logo do painel de ${organization?.tradeName ?? "organização"}`}
+                height={72}
+                src={activeDisplayLogoUrl}
+                unoptimized
+                width={180}
+              />
+            </span>
+          ) : (
+            <small className="active-logo-empty">O painel usará a logo da retirada até você cadastrar outra.</small>
+          )}
           <small>PNG, JPEG ou WebP; até 2 MB e 2048 × 2048.</small>
         </label>
       </div>

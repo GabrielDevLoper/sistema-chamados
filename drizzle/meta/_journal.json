@@ -36,6 +36,20 @@
       "when": 1785359846038,
       "tag": "0004_cuddly_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1787076333634,
+      "tag": "0005_striped_mentor",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787080083459,
+      "tag": "0006_productive_masque",
+      "breakpoints": true
     }
   ]
 }

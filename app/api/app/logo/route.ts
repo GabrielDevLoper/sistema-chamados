@@ -9,8 +9,8 @@ export async function PUT(request: Request) {
     const form = await request.formData();
     const logo = form.get("logo");
     if (!(logo instanceof File)) throw new Error("Selecione uma logo.");
-    await storeOrganizationLogo(organization.id, logo);
-    return Response.json({ ok: true });
+    const logoKey = await storeOrganizationLogo(organization.id, logo);
+    return Response.json({ ok: true, logoKey });
   } catch (error) {
     const status = error instanceof AuthenticationError ? error.status : 400;
     return Response.json({ error: error instanceof Error ? error.message : "Não foi possível enviar." }, { status });

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import type {
@@ -9,6 +10,7 @@ import type {
   QueueService,
 } from "../../db/types";
 import { brandThemeStyle } from "../brand-theme";
+import { publicOrganizationAssetUrl } from "../organization-media";
 
 type Section = "services" | "sectors" | "desks" | "branding";
 
@@ -28,6 +30,17 @@ export function OrganizationManagement({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [previewColor, setPreviewColor] = useState(organization.primaryColor);
+  const logoUrl = publicOrganizationAssetUrl(organization.slug, "logo", organization.logoKey);
+  const displayLogoUrl = publicOrganizationAssetUrl(
+    organization.slug,
+    "display-logo",
+    organization.displayLogoKey,
+  );
+  const backgroundUrl = publicOrganizationAssetUrl(
+    organization.slug,
+    "background",
+    organization.displayBackgroundKey,
+  );
 
   async function request(path: string, method: "POST" | "PUT" | "DELETE", payload: Record<string, unknown>) {
     setBusy(true);
@@ -65,8 +78,12 @@ export function OrganizationManagement({
 
   async function saveBranding(formData: FormData) {
     const logo = formData.get("logo");
+    const displayLogo = formData.get("displayLogo");
+    const background = formData.get("background");
     const payload = Object.fromEntries(
-      [...formData.entries()].filter(([name]) => name !== "logo")
+      [...formData.entries()].filter(
+        ([name]) => name !== "logo" && name !== "displayLogo" && name !== "background",
+      )
     );
     setBusy(true);
     setError("");
@@ -84,6 +101,26 @@ export function OrganizationManagement({
         const upload = await fetch("/api/app/logo", { method: "PUT", body: logoForm });
         const uploadData = (await upload.json()) as { error?: string };
         if (!upload.ok) throw new Error(uploadData.error || "Não foi possível enviar a logo.");
+      }
+      if (displayLogo instanceof File && displayLogo.size > 0) {
+        const displayLogoForm = new FormData();
+        displayLogoForm.set("displayLogo", displayLogo);
+        const upload = await fetch("/api/app/display-logo", {
+          method: "PUT",
+          body: displayLogoForm,
+        });
+        const uploadData = (await upload.json()) as { error?: string };
+        if (!upload.ok) throw new Error(uploadData.error || "Não foi possível enviar a logo do painel.");
+      }
+      if (background instanceof File && background.size > 0) {
+        const backgroundForm = new FormData();
+        backgroundForm.set("background", background);
+        const upload = await fetch("/api/app/background", {
+          method: "PUT",
+          body: backgroundForm,
+        });
+        const uploadData = (await upload.json()) as { error?: string };
+        if (!upload.ok) throw new Error(uploadData.error || "Não foi possível enviar a imagem de fundo.");
       }
       window.location.reload();
     } catch (requestError) {
@@ -273,10 +310,50 @@ export function OrganizationManagement({
             <label><span>Nome fantasia</span><input defaultValue={organization.tradeName} name="tradeName" required /></label>
             <label><span>Cor primária</span><input name="primaryColor" onChange={(event) => setPreviewColor(event.target.value)} type="color" value={previewColor} /></label>
             <label><span>Fuso horário</span><input defaultValue={organization.timezone} name="timezone" required /></label>
-            <label><span>Logo</span><input accept="image/png,image/jpeg,image/webp" name="logo" type="file" /></label>
+            <label className="branding-logo-field">
+              <span>Logo da retirada de senhas</span>
+              <input accept="image/png,image/jpeg,image/webp" name="logo" type="file" />
+              {logoUrl ? (
+                <span className="active-logo-preview">
+                  <small>Logo ativa</small>
+                  <Image
+                    alt={`Logo ativa da ${organization.tradeName}`}
+                    height={72}
+                    src={logoUrl}
+                    unoptimized
+                    width={180}
+                  />
+                </span>
+              ) : (
+                <small className="active-logo-empty">Nenhuma logo ativa cadastrada.</small>
+              )}
+            </label>
+            <label className="branding-logo-field">
+              <span>Logo do painel de chamados</span>
+              <input accept="image/png,image/jpeg,image/webp" name="displayLogo" type="file" />
+              {displayLogoUrl ? (
+                <span className="active-logo-preview">
+                  <small>Logo ativa do painel</small>
+                  <Image
+                    alt={`Logo do painel de ${organization.tradeName}`}
+                    height={72}
+                    src={displayLogoUrl}
+                    unoptimized
+                    width={180}
+                  />
+                </span>
+              ) : (
+                <small className="active-logo-empty">O painel usará a logo da retirada até você cadastrar outra.</small>
+              )}
+            </label>
+            <label className="branding-background-field"><span>Imagem de fundo do painel</span><input accept="image/png,image/jpeg,image/webp" name="background" type="file" /><small>Use uma imagem horizontal, de preferência 16:9. Até 5 MB e 4096 × 4096 pixels.</small></label>
             <button className="primary-button" disabled={busy}>Salvar identidade</button>
           </form>
-          <div className="brand-preview" aria-live="polite">
+          <div
+            className={`brand-preview${backgroundUrl ? " has-background" : ""}`}
+            aria-live="polite"
+            style={backgroundUrl ? { backgroundImage: `linear-gradient(rgba(8, 26, 24, 0.74), rgba(8, 26, 24, 0.74)), url("${backgroundUrl}")` } : undefined}
+          >
             <div>
               <small>Prévia do painel de chamadas</small>
               <strong>A001</strong>
@@ -288,7 +365,7 @@ export function OrganizationManagement({
               <strong>{previewColor.toUpperCase()}</strong>
             </aside>
           </div>
-          <p className="storage-note">PNG, JPEG ou WebP; até 2 MB e 2048 × 2048 pixels.</p>
+          <p className="storage-note">Cada logo: PNG, JPEG ou WebP; até 2 MB e 2048 × 2048 pixels. Fundo: PNG, JPEG ou WebP; até 5 MB e 4096 × 4096 pixels.</p>
         </section>
       )}
       {error ? <p className="form-error" role="alert">{error}</p> : null}

@@ -1,6 +1,7 @@
 import { getD1, getR2 } from "./runtime";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_BACKGROUND_BYTES = 5 * 1024 * 1024;
 
 function detectImage(bytes: Uint8Array) {
   if (
@@ -45,9 +46,13 @@ function detectImage(bytes: Uint8Array) {
   return null;
 }
 
-export async function storeOrganizationLogo(
+type LogoColumn = "logo_key" | "display_logo_key";
+
+async function storeOrganizationLogoAsset(
   organizationId: number,
-  file: File
+  file: File,
+  column: LogoColumn,
+  folder: "logos" | "display-logos",
 ) {
   if (file.size <= 0 || file.size > MAX_LOGO_BYTES) {
     throw new Error("A logo deve ter no máximo 2 MB.");
@@ -59,24 +64,83 @@ export async function storeOrganizationLogo(
     throw new Error("A logo deve ter no máximo 2048 × 2048 pixels.");
   }
   const current = await getD1()
-    .prepare("SELECT logo_key FROM organizations WHERE id = ? LIMIT 1")
+    .prepare(`SELECT ${column} AS current_key FROM organizations WHERE id = ? LIMIT 1`)
     .bind(organizationId)
-    .first<{ logo_key: string | null }>();
+    .first<{ current_key: string | null }>();
   if (!current) throw new Error("Organização não encontrada.");
-  const key = `organizations/${organizationId}/logos/${crypto.randomUUID()}.${image.extension}`;
+  const key = `organizations/${organizationId}/${folder}/${crypto.randomUUID()}.${image.extension}`;
   await getR2().put(key, bytes, {
     httpMetadata: { contentType: image.contentType, cacheControl: "public, max-age=86400" },
     customMetadata: { organizationId: String(organizationId) },
   });
   try {
     await getD1()
-      .prepare("UPDATE organizations SET logo_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .prepare(`UPDATE organizations SET ${column} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
       .bind(key, organizationId)
       .run();
   } catch (error) {
     await getR2().delete(key);
     throw error;
   }
-  if (current.logo_key) await getR2().delete(current.logo_key);
+  // O D1 aponta para a nova chave antes de remover a anterior. Assim, a
+  // organização nunca fica sem uma mídia válida mesmo se o upload falhar.
+  if (current.current_key) await getR2().delete(current.current_key);
+  return key;
+}
+
+export function storeOrganizationLogo(organizationId: number, file: File) {
+  return storeOrganizationLogoAsset(organizationId, file, "logo_key", "logos");
+}
+
+export function storeOrganizationDisplayLogo(organizationId: number, file: File) {
+  return storeOrganizationLogoAsset(
+    organizationId,
+    file,
+    "display_logo_key",
+    "display-logos",
+  );
+}
+
+export async function storeOrganizationDisplayBackground(
+  organizationId: number,
+  file: File,
+) {
+  if (file.size <= 0 || file.size > MAX_BACKGROUND_BYTES) {
+    throw new Error("A imagem de fundo deve ter no máximo 5 MB.");
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const image = detectImage(bytes);
+  if (!image) throw new Error("Envie uma imagem PNG, JPEG ou WebP válida.");
+  if (image.width > 4096 || image.height > 4096) {
+    throw new Error("A imagem de fundo deve ter no máximo 4096 × 4096 pixels.");
+  }
+  const current = await getD1()
+    .prepare("SELECT display_background_key FROM organizations WHERE id = ? LIMIT 1")
+    .bind(organizationId)
+    .first<{ display_background_key: string | null }>();
+  if (!current) throw new Error("Organização não encontrada.");
+  const key = `organizations/${organizationId}/backgrounds/${crypto.randomUUID()}.${image.extension}`;
+  await getR2().put(key, bytes, {
+    httpMetadata: {
+      contentType: image.contentType,
+      cacheControl: "public, max-age=86400",
+    },
+    customMetadata: { organizationId: String(organizationId) },
+  });
+  try {
+    await getD1()
+      .prepare(
+        "UPDATE organizations SET display_background_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      )
+      .bind(key, organizationId)
+      .run();
+  } catch (error) {
+    await getR2().delete(key);
+    throw error;
+  }
+  // Remove a imagem antiga do bucket para não acumular versões sem uso.
+  if (current.display_background_key) {
+    await getR2().delete(current.display_background_key);
+  }
   return key;
 }

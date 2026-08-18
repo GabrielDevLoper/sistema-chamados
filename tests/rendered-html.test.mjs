@@ -5,10 +5,15 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 
 test("entrega rotas públicas e painéis autenticados por organização", async () => {
-  const [queueApp, clientPage, displayPage, organizationHome, layout] = await Promise.all([
+  const [queueApp, clientPage, displayPage, backgroundRoute, logoRoute, displayLogoRoute, management, organizationForm, organizationHome, layout] = await Promise.all([
     readFile(new URL("app/queue-app.tsx", root), "utf8"),
     readFile(new URL("app/fila/[slug]/cliente/page.tsx", root), "utf8"),
     readFile(new URL("app/fila/[slug]/painel/page.tsx", root), "utf8"),
+    readFile(new URL("app/api/public/[slug]/background/route.ts", root), "utf8"),
+    readFile(new URL("app/api/public/[slug]/logo/route.ts", root), "utf8"),
+    readFile(new URL("app/api/public/[slug]/display-logo/route.ts", root), "utf8"),
+    readFile(new URL("app/app/management.tsx", root), "utf8"),
+    readFile(new URL("app/plataforma/organizacoes/organization-form.tsx", root), "utf8"),
     readFile(new URL("app/app/page.tsx", root), "utf8"),
     readFile(new URL("app/layout.tsx", root), "utf8"),
   ]);
@@ -19,8 +24,25 @@ test("entrega rotas públicas e painéis autenticados por organização", async 
   assert.match(queueApp, /queue\.desks\.map/);
   assert.match(queueApp, /queue-desk:/);
   assert.match(queueApp, /organization\.primaryColor/);
+  assert.match(queueApp, /displayBackgroundKey/);
+  assert.match(queueApp, /displayLogoKey/);
+  assert.match(queueApp, /variant="display"/);
+  assert.match(queueApp, /publicOrganizationAssetUrl/);
+  assert.match(queueApp, /\"logo\"/);
+  assert.match(displayPage, /displayBackgroundKey/);
+  assert.match(backgroundRoute, /displayBackgroundKey/);
+  assert.match(logoRoute, /cache-control/);
+  assert.match(displayLogoRoute, /displayLogoKey/);
+  assert.match(management, /Logo ativa/);
+  assert.match(management, /publicOrganizationAssetUrl/);
+  assert.match(management, /name="displayLogo"/);
+  assert.match(organizationForm, /Logo ativa/);
+  assert.match(organizationForm, /activeLogoKey/);
+  assert.match(organizationForm, /activeDisplayLogoKey/);
   assert.match(queueApp, /Notification\.requestPermission/);
   assert.match(queueApp, /new Notification\(`Nova senha:/);
+  assert.match(queueApp, /useState\(true\)/);
+  assert.match(queueApp, /Som ativado ✓/);
   assert.match(queueApp, /knownTicketIds/);
   assert.match(queueApp, /initialMode !== "client" \? \(/);
   assert.match(organizationHome, /Atender a fila/);
@@ -30,8 +52,10 @@ test("entrega rotas públicas e painéis autenticados por organização", async 
 });
 
 test("usa migrations versionadas e isolamento multiorganização", async () => {
-  const [migration, runtime, queue, publicRoute, hosting] = await Promise.all([
+  const [migration, backgroundMigration, displayLogoMigration, runtime, queue, publicRoute, hosting] = await Promise.all([
     readFile(new URL("drizzle/0002_lonely_captain_midlands.sql", root), "utf8"),
+    readFile(new URL("drizzle/0005_striped_mentor.sql", root), "utf8"),
+    readFile(new URL("drizzle/0006_productive_masque.sql", root), "utf8"),
     readFile(new URL("db/runtime.ts", root), "utf8"),
     readFile(new URL("db/queue.ts", root), "utf8"),
     readFile(new URL("app/api/public/[slug]/tickets/route.ts", root), "utf8"),
@@ -39,6 +63,8 @@ test("usa migrations versionadas e isolamento multiorganização", async () => {
   ]);
 
   assert.match(migration, /CREATE TABLE `organizations`/);
+  assert.match(backgroundMigration, /display_background_key/);
+  assert.match(displayLogoMigration, /display_logo_key/);
   assert.match(migration, /CREATE TABLE `ticket_sequences`/);
   assert.match(migration, /INSERT INTO `organizations`/);
   assert.doesNotMatch(runtime, /CREATE TABLE IF NOT EXISTS/);
@@ -47,6 +73,15 @@ test("usa migrations versionadas e isolamento multiorganização", async () => {
   assert.match(publicRoute, /getOrganizationBySlug/);
   assert.match(hosting, /"d1": "DB"/);
   assert.match(hosting, /"r2": "R2"/);
+});
+
+test("substituição de identidade remove a mídia anterior do R2", async () => {
+  const logos = await readFile(new URL("db/logos.ts", root), "utf8");
+  assert.match(logos, /display_logo_key/);
+  assert.match(logos, /current\.current_key/);
+  assert.match(logos, /storeOrganizationDisplayLogo/);
+  assert.match(logos, /if \(current\.display_background_key\) \{[\s\S]*getR2\(\)\.delete\(current\.display_background_key\)/);
+  assert.match(logos, /await getR2\(\)\.delete\(key\)/);
 });
 
 test("organiza guichês por setores e limita os serviços elegíveis", async () => {
@@ -220,9 +255,13 @@ test("deriva uma paleta acessível da cor primária da organização", async () 
   assert.match(theme, /readableText/);
   assert.match(theme, /--brand-on-primary/);
   assert.match(theme, /--brand-strong/);
-  assert.match(queueApp, /brandThemeStyle\(queue\.organization\.primaryColor\)/);
+  assert.match(queueApp, /brandThemeStyle\(\s*queue\.organization\.primaryColor/);
   assert.match(styles, /linear-gradient\(135deg, var\(--brand-strong\)/);
   assert.match(styles, /\.brand-preview/);
+  assert.match(styles, /\.branding-logo-field\s*\{[\s\S]*grid-column: 1 \/ -1;/);
+  assert.match(styles, /\.platform-logo-field\s*\{[\s\S]*grid-column: 1 \/ -1;/);
+  assert.match(styles, /\.display-header \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
+  assert.match(styles, /\.client \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
   assert.match(styles, /\.desk-select select[\s\S]*var\(--brand-primary\)/);
   assert.doesNotMatch(styles, /#204b47/i);
 });

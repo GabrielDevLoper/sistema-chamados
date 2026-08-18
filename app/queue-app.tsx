@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { brandThemeStyle } from "./brand-theme";
+import { publicOrganizationAssetUrl } from "./organization-media";
 import type { QueuePayload, QueueService, Ticket } from "../db/types";
 
 type Mode = "client" | "attendant" | "display" | "admin";
@@ -37,6 +38,8 @@ const DEFAULT_ORGANIZATION: PublicOrganization = {
   tradeName: "Cartório",
   slug: "cartorio",
   logoKey: null,
+  displayLogoKey: null,
+  displayBackgroundKey: null,
   primaryColor: "#1f5b55",
   timezone: "America/Maceio",
 };
@@ -108,11 +111,14 @@ function showTicketNotification(
   ticket: Ticket,
   organization: PublicOrganization,
 ) {
+  const logoUrl = publicOrganizationAssetUrl(
+    organization.slug,
+    "logo",
+    organization.logoKey,
+  );
   const notification = new Notification(`Nova senha: ${ticket.code}`, {
     body: `${ticket.service}${ticket.priority ? " · Atendimento prioritário" : ""}`,
-    icon: organization.logoKey
-      ? `/api/public/${encodeURIComponent(organization.slug)}/logo`
-      : undefined,
+    icon: logoUrl,
     tag: `queue-ticket-${ticket.id}`,
   });
 
@@ -122,15 +128,29 @@ function showTicketNotification(
   };
 }
 
-function Logo({ organization }: { organization: PublicOrganization }) {
+function Logo({
+  organization,
+  variant = "client",
+}: {
+  organization: PublicOrganization;
+  variant?: "client" | "display";
+}) {
+  const key = variant === "display"
+    ? organization.displayLogoKey ?? organization.logoKey
+    : organization.logoKey;
+  const logoUrl = publicOrganizationAssetUrl(
+    organization.slug,
+    variant === "display" && organization.displayLogoKey ? "display-logo" : "logo",
+    key,
+  );
   return (
     <div className="brand" aria-label={organization.tradeName}>
-      {organization.logoKey ? (
+      {logoUrl ? (
         <Image
           alt={`Logo da ${organization.tradeName}`}
           className="brand-image"
           height={44}
-          src={`/api/public/${encodeURIComponent(organization.slug)}/logo`}
+          src={logoUrl}
           unoptimized
           width={52}
         />
@@ -141,10 +161,6 @@ function Logo({ organization }: { organization: PublicOrganization }) {
           <i />
         </span>
       )}
-      <span>
-        <strong>{organization.tradeName}</strong>
-        <small>Sistema de atendimento</small>
-      </span>
     </div>
   );
 }
@@ -243,7 +259,10 @@ export function QueueApp({
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
-  const [displaySound, setDisplaySound] = useState(false);
+  // O painel público deve iniciar pronto para anunciar as chamadas.
+  // O contexto de áudio é criado após a montagem para evitar acesso a APIs
+  // do navegador durante a renderização no servidor.
+  const [displaySound, setDisplaySound] = useState(true);
   const [notificationPermission, setNotificationPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
@@ -362,6 +381,22 @@ export function QueueApp({
     return () =>
       document.removeEventListener("fullscreenchange", syncFullscreen);
   }, []);
+
+  useEffect(() => {
+    if (initialMode !== "display" || audioContext.current) return;
+
+    const initializeAudio = window.setTimeout(() => {
+      if (typeof AudioContext === "undefined") return;
+      try {
+        audioContext.current = new AudioContext();
+        void audioContext.current.resume().catch(() => undefined);
+      } catch {
+        // O anúncio de voz continua disponível mesmo sem o beep do contexto.
+      }
+    }, 0);
+
+    return () => window.clearTimeout(initializeAudio);
+  }, [initialMode]);
 
   useEffect(() => {
     if (initialMode !== "client" || !createdTicket) return;
@@ -640,11 +675,18 @@ export function QueueApp({
   return (
     <main
       className={`app-shell ${initialMode}`}
-      style={brandThemeStyle(queue.organization.primaryColor)}
+      style={brandThemeStyle(
+        queue.organization.primaryColor,
+        publicOrganizationAssetUrl(
+          queue.organization.slug,
+          "background",
+          queue.organization.displayBackgroundKey,
+        ),
+      )}
     >
       {initialMode === "display" ? (
         <header className="display-header">
-          <Logo organization={queue.organization} />
+          <Logo organization={queue.organization} variant="display" />
           <div className="display-status">
             <span className="status-dot" />
             <span>Atendimento em funcionamento</span>
@@ -656,7 +698,6 @@ export function QueueApp({
           <div className="display-controls">
             <button
               className={displaySound ? "sound-enabled" : ""}
-              disabled={displaySound}
               onClick={enableDisplaySound}
               type="button"
             >
@@ -877,7 +918,9 @@ export function QueueApp({
           <div className="client-heading">
             <p className="kicker">Bem-vindo à {queue.organization.tradeName}</p>
             <h1>
-              {priority ? "Escolha o serviço prioritário" : "Como podemos ajudar?"}
+              {priority
+                ? "Escolha o serviço prioritário"
+                : "Como podemos ajudar?"}
             </h1>
             <p>
               {priority
@@ -920,8 +963,8 @@ export function QueueApp({
                   <small>Preferência garantida por lei</small>
                   <strong>Atendimento prioritário</strong>
                   <span>
-                    Para pessoas idosas, gestantes, PcD e pessoas com criança
-                    de colo
+                    Para pessoas idosas, gestantes, PcD e pessoas com criança de
+                    colo
                   </span>
                 </span>
               </button>
@@ -1037,7 +1080,7 @@ export function QueueApp({
           <aside className="attendant-sidebar">
             <div>
               <p className="kicker">Painel operacional</p>
-              <h1>Atendimento</h1>
+              <h2>Atendimento</h2>
               <p>Gerencie a fila e chame a próxima senha.</p>
             </div>
 

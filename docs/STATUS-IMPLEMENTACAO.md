@@ -20,8 +20,9 @@ Atualizado em 29 de julho de 2026.
 - exclusão protegida de serviços, guichês e setores com preservação do histórico;
 - migração automática dos guichês e serviços existentes para Atendimento Geral;
 - rotas públicas por `slug`;
-- nome, cor, fuso e logo específicos por organização;
-- armazenamento de logos no R2 com validação de tipo, tamanho e dimensões;
+- nome, cor, fuso e logos independentes para retirada de senha e painel por organização;
+- armazenamento das logos no R2 com validação de tipo, tamanho e dimensões, removendo a versão anterior a cada troca;
+- imagem de fundo do painel de chamadas por organização, armazenada no R2 com camada de contraste;
 - persistência local da escolha de guichê após a hidratação;
 - auditoria das alterações de organização;
 - testes estáticos de arquitetura, segurança, setores e hidratação, além do build.

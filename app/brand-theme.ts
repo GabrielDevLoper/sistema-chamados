@@ -48,7 +48,10 @@ function rgba(color: Rgb, alpha: number) {
   return `rgba(${Math.round(color.red)}, ${Math.round(color.green)}, ${Math.round(color.blue)}, ${alpha})`;
 }
 
-export function brandThemeStyle(primaryColor: string): CSSProperties {
+export function brandThemeStyle(
+  primaryColor: string,
+  displayBackgroundUrl?: string,
+): CSSProperties {
   const primary = parseHex(primaryColor);
   const black = parseHex("#000000");
   const white = parseHex("#FFFFFF");
@@ -75,6 +78,9 @@ export function brandThemeStyle(primaryColor: string): CSSProperties {
     "--brand-border": rgba(accent, 0.28),
     "--brand-shadow": `0 22px 60px ${rgba(strong, 0.16)}`,
     "--brand-sidebar": rgba(deep, 0.82),
+    "--brand-display-background": displayBackgroundUrl
+      ? `url("${displayBackgroundUrl}")`
+      : "none",
     "--deep": toHex(strong),
     "--green": toHex(primary),
     "--mint": toHex(soft),

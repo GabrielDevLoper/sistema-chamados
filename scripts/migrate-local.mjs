@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 const root = process.cwd();
 const wrangler = resolve(root, "node_modules/wrangler/bin/wrangler.js");
-const config = resolve(root, "wrangler.seed.jsonc");
+const config = resolve(root, "wrangler.jsonc");
 const persistence = resolve(root, ".wrangler/state");
 const runtimeEnvironment = {
   ...process.env,
@@ -12,7 +12,7 @@ const runtimeEnvironment = {
   MINIFLARE_REGISTRY_PATH: resolve(root, ".wrangler/registry"),
 };
 const databaseArguments = [
-  "site-creator-d1",
+  "DB",
   "--local",
   "--persist-to",
   persistence,

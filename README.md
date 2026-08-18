@@ -56,7 +56,7 @@ Na primeira instalação, acesse `/configurar-administrador`, informe o valor de
 não existir nenhum usuário com o perfil `platform_admin`.
 
 Para desenvolvimento, também existe um seed idempotente com a conta
-`adm@gmail.com` e senha `123456`:
+`velyondev@gmail.com` e senha `123456`:
 
 ```bash
 npm run db:seed:admin

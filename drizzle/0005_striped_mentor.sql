@@ -1,0 +1,1 @@
+ALTER TABLE `organizations` ADD `display_background_key` text;

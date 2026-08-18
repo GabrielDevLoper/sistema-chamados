@@ -16,6 +16,8 @@ export const organizations = sqliteTable(
     slug: text("slug").notNull(),
     businessType: text("business_type").notNull().default("other"),
     logoKey: text("logo_key"),
+    displayLogoKey: text("display_logo_key"),
+    displayBackgroundKey: text("display_background_key"),
     primaryColor: text("primary_color").notNull().default("#123D3A"),
     timezone: text("timezone").notNull().default("America/Maceio"),
     status: text("status").notNull().default("active"),

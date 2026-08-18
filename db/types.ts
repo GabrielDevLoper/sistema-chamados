@@ -6,6 +6,8 @@ export type Organization = {
   slug: string;
   businessType: string;
   logoKey: string | null;
+  displayLogoKey: string | null;
+  displayBackgroundKey: string | null;
   primaryColor: string;
   timezone: string;
   status: OrganizationStatus;
@@ -62,7 +64,8 @@ export type Ticket = {
 export type QueuePayload = {
   organization: Pick<
     Organization,
-    "tradeName" | "slug" | "logoKey" | "primaryColor" | "timezone"
+    "tradeName" | "slug" | "logoKey" | "displayLogoKey" | "primaryColor" | "timezone"
+    | "displayBackgroundKey"
   >;
   services: QueueService[];
   sectors: QueueSector[];

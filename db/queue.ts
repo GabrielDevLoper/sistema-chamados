@@ -237,6 +237,8 @@ export async function getQueue(
       tradeName: organization.tradeName,
       slug: organization.slug,
       logoKey: organization.logoKey,
+      displayLogoKey: organization.displayLogoKey,
+      displayBackgroundKey: organization.displayBackgroundKey,
       primaryColor: organization.primaryColor,
       timezone: organization.timezone,
     },
