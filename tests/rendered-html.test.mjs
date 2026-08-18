@@ -262,6 +262,7 @@ test("deriva uma paleta acessível da cor primária da organização", async () 
   assert.match(styles, /\.platform-logo-field\s*\{[\s\S]*grid-column: 1 \/ -1;/);
   assert.match(styles, /\.display-header \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
   assert.match(styles, /\.client \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
+  assert.match(styles, /\.attendant \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
   assert.match(styles, /\.desk-select select[\s\S]*var\(--brand-primary\)/);
   assert.doesNotMatch(styles, /#204b47/i);
 });

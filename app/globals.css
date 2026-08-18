@@ -2290,6 +2290,14 @@ button:disabled {
   width: 200px;
 }
 
+.attendant .brand-image {
+  background: transparent;
+  border-radius: 0;
+  height: 88px;
+  padding: 0;
+  width: 200px;
+}
+
 .display-status {
   align-items: center;
   color: rgba(255, 255, 255, 0.63);
