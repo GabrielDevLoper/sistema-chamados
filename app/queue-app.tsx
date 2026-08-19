@@ -69,9 +69,6 @@ function formatTicketDate(date: string, timezone: string) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
     timeZone: timezone,
   }).format(new Date(date));
 }
@@ -464,6 +461,14 @@ export function QueueApp({
   async function createTicket(serviceId: number) {
     const ticket = await sendAction({ action: "create", serviceId, priority });
     if (ticket) setCreatedTicket(ticket);
+  }
+
+  async function callSpecificTicket(ticketId: number) {
+    if (!deskId) {
+      setError("Selecione um guichê antes de chamar uma senha.");
+      return;
+    }
+    await sendAction({ action: "call", id: ticketId, deskId });
   }
 
   async function enableNotifications() {
@@ -1281,6 +1286,15 @@ export function QueueApp({
                           queue.organization.timezone,
                         )}
                       </span>
+                      <button
+                        aria-label={`Chamar senha ${ticket.code}`}
+                        className="queue-call-button"
+                        disabled={busy || !deskId}
+                        onClick={() => callSpecificTicket(ticket.id)}
+                        type="button"
+                      >
+                        Chamar
+                      </button>
                     </article>
                   ))
                 ) : (
@@ -1318,7 +1332,7 @@ export function QueueApp({
           <div className="ticket-paper">
             <Logo organization={queue.organization} />
             <p className="ticket-print-date">
-              <span>Data/Hora</span>
+              <span>Data</span>
               <strong>
                 {formatTicketDate(
                   createdTicket.createdAt,
@@ -1330,9 +1344,6 @@ export function QueueApp({
             <strong className="printed-code">{createdTicket.code}</strong>
             <span className="printed-service">{createdTicket.service}</span>
             {createdTicket.priority ? <em>Atendimento prioritário</em> : null}
-            <p className="ticket-note">
-              Aguarde sua senha aparecer no painel e fique atento à chamada.
-            </p>
           </div>
         </div>
       ) : null}

@@ -323,12 +323,8 @@ export async function createTicket(input: {
   return mapTicket(ticket);
 }
 
-export async function callNextTicket(input: {
-  organization: Organization;
-  deskId: number;
-}): Promise<Ticket> {
+async function getDeskForCall(organizationId: number, deskId: number) {
   const database = getD1();
-  const serviceDate = serviceDateForTimezone(input.organization.timezone);
   const desk = await database
     .prepare(
       `SELECT
@@ -343,9 +339,80 @@ export async function callNextTicket(input: {
        GROUP BY desks.id
        LIMIT 1`
     )
-    .bind(input.deskId, input.organization.id)
+    .bind(deskId, organizationId)
     .first<DeskRow>();
   if (!desk) throw new Error("Guichê inválido.");
+  return desk;
+}
+
+export async function callTicket(input: {
+  organization: Organization;
+  deskId: number;
+  ticketId: number;
+}): Promise<Ticket> {
+  const database = getD1();
+  const serviceDate = serviceDateForTimezone(input.organization.timezone);
+  const desk = await getDeskForCall(input.organization.id, input.deskId);
+
+  const current = await database
+    .prepare(
+      `SELECT tickets.*, COALESCE(tickets.sector, sectors.name) AS sector_name
+       FROM tickets
+       LEFT JOIN sectors ON sectors.id = tickets.sector_id
+       WHERE tickets.organization_id = ? AND tickets.service_date = ?
+         AND tickets.status = 'called' AND tickets.desk_id = ?
+       LIMIT 1`
+    )
+    .bind(input.organization.id, serviceDate, desk.id)
+    .first<TicketRow>();
+  if (current) {
+    if (current.id === input.ticketId) return mapTicket(current);
+    throw new Error("Finalize a senha em atendimento antes de chamar outra.");
+  }
+
+  const called = await database
+    .prepare(
+      `UPDATE tickets
+       SET
+         status = 'called',
+         desk_id = ?,
+         sector_id = ?,
+         sector = ?,
+         desk = ?,
+         called_at = CURRENT_TIMESTAMP
+       WHERE id = (
+         SELECT id FROM tickets
+         WHERE id = ? AND organization_id = ? AND service_date = ? AND status = 'waiting'
+           AND service_id IN (
+             SELECT service_id FROM sector_services WHERE sector_id = ?
+           )
+         LIMIT 1
+       ) AND organization_id = ? AND status = 'waiting'
+       RETURNING *`
+    )
+    .bind(
+      desk.id,
+      desk.sector_id,
+      desk.sector_name,
+      desk.number,
+      input.ticketId,
+      input.organization.id,
+      serviceDate,
+      desk.sector_id,
+      input.organization.id
+    )
+    .first<TicketRow>();
+  if (!called) throw new Error("Não há senhas aguardando.");
+  return { ...mapTicket(called), sectorName: desk.sector_name };
+}
+
+export async function callNextTicket(input: {
+  organization: Organization;
+  deskId: number;
+}): Promise<Ticket> {
+  const database = getD1();
+  const serviceDate = serviceDateForTimezone(input.organization.timezone);
+  const desk = await getDeskForCall(input.organization.id, input.deskId);
 
   const current = await database
     .prepare(

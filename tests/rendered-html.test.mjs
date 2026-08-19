@@ -41,6 +41,9 @@ test("entrega rotas públicas e painéis autenticados por organização", async 
   assert.match(organizationForm, /activeDisplayLogoKey/);
   assert.match(queueApp, /Notification\.requestPermission/);
   assert.match(queueApp, /new Notification\(`Nova senha:/);
+  assert.match(queueApp, /callSpecificTicket/);
+  assert.match(queueApp, /action: "call"/);
+  assert.match(queueApp, /Chamar senha/);
   assert.match(queueApp, /useState\(true\)/);
   assert.match(queueApp, /Som ativado ✓/);
   assert.match(queueApp, /knownTicketIds/);
@@ -176,8 +179,6 @@ test("formata a ficha para bobina térmica de 80 mm", async () => {
     readFile(new URL("app/globals.css", root), "utf8"),
   ]);
 
-  assert.match(queueApp, /formatTicketDate/);
-  assert.match(queueApp, /ticket-print-date/);
   assert.match(queueApp, /initialMode !== "client" \|\| !createdTicket/);
   assert.match(queueApp, /requestAnimationFrame/);
   assert.match(queueApp, /window\.print\(\)/);
@@ -185,10 +186,17 @@ test("formata a ficha para bobina térmica de 80 mm", async () => {
   assert.match(queueApp, /setCreatedTicket\(null\)/);
   assert.doesNotMatch(queueApp, /Imprimir comprovante/);
   assert.doesNotMatch(queueApp, /Tempo estimado|Tempo médio|Previsão/);
+  assert.match(queueApp, /formatTicketDate/);
+  assert.match(queueApp, /ticket-print-date/);
+  assert.doesNotMatch(queueApp, /ticket-note|Aguarde sua senha aparecer/);
+  assert.match(queueApp, /function formatTicketDate[\s\S]*day: "2-digit"[\s\S]*year: "numeric"[\s\S]*timeZone/);
   assert.doesNotMatch(queueApp, /client-footer|Sem pessoas aguardando/);
   assert.match(styles, /@page\s*{[\s\S]*size: 80mm 90mm/);
   assert.match(styles, /\.app-shell > \*:not\(\.ticket-print-layer\)/);
   assert.match(styles, /\.ticket-paper[\s\S]*width: 80mm/);
+  assert.match(styles, /\.printed-code[\s\S]*font-size: 40pt/);
+  assert.match(styles, /\.printed-service[\s\S]*font-size: 11pt/);
+  assert.match(styles, /\.ticket-print-date[\s\S]*display: flex !important/);
 });
 
 test("oferece atendimento prioritário por um card acessível", async () => {
@@ -263,6 +271,8 @@ test("deriva uma paleta acessível da cor primária da organização", async () 
   assert.match(styles, /\.display-header \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
   assert.match(styles, /\.client \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
   assert.match(styles, /\.attendant \.brand-image\s*\{[\s\S]*background: transparent;[\s\S]*height: 88px;[\s\S]*width: 200px;/);
+  assert.match(styles, /\.display-clock span\s*\{[\s\S]*font-size: clamp\(13px, 1\.1vw, 18px\)/);
+  assert.match(styles, /\.display-clock strong\s*\{[\s\S]*font-size: clamp\(34px, 3vw, 52px\)/);
   assert.match(styles, /\.desk-select select[\s\S]*var\(--brand-primary\)/);
   assert.doesNotMatch(styles, /#204b47/i);
 });

@@ -1,6 +1,7 @@
 import { assertSameOrigin, AuthenticationError } from "../../../db/auth";
 import { authorizeOrganization } from "../../organization-auth";
 import {
+  callTicket,
   callNextTicket,
   createTicket,
   getQueue,
@@ -76,6 +77,20 @@ export async function POST(request: Request) {
       return Response.json({ ticket });
     }
 
+    if (payload.action === "call") {
+      const ticketId = Number(payload.id);
+      const deskId = Number(payload.deskId);
+      if (!Number.isInteger(ticketId) || !Number.isInteger(deskId)) {
+        return Response.json({ error: "Senha ou guichê inválido." }, { status: 400 });
+      }
+      const ticket = await callTicket({
+        organization,
+        deskId,
+        ticketId,
+      });
+      return Response.json({ ticket });
+    }
+
     if (["finish", "no_show", "recall"].includes(payload.action ?? "")) {
       const ticketId = Number(payload.id);
       if (!Number.isInteger(ticketId)) {
@@ -96,7 +111,9 @@ export async function POST(request: Request) {
     }
     const message = databaseErrorMessage(error);
     const status =
-      message.includes("não há senhas") || message.includes("já foi atualizada")
+      message.includes("não há senhas") ||
+      message.includes("já foi atualizada") ||
+      message.includes("Finalize a senha")
         ? 409
         : message.includes("válido") || message.includes("inválido")
           ? 400

@@ -1775,7 +1775,7 @@ button:disabled {
   border-top: 1px solid #e5e7e1;
   display: grid;
   gap: 16px;
-  grid-template-columns: 30px 115px 1fr 55px;
+  grid-template-columns: 30px 115px minmax(0, 1fr) 55px auto;
   min-height: 62px;
   padding: 8px 30px;
 }
@@ -1833,6 +1833,28 @@ button:disabled {
 
 .ticket-time {
   text-align: right;
+}
+
+.queue-call-button {
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-border);
+  border-radius: 8px;
+  color: var(--brand-primary);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+.queue-call-button:hover {
+  background: var(--brand-primary);
+  color: var(--brand-on-primary);
+}
+
+.queue-call-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .queue-empty {
@@ -1968,12 +1990,6 @@ button:disabled {
   font-weight: 400;
   margin-top: 4px;
   text-transform: none;
-}
-
-.ticket-paper p.ticket-note {
-  line-height: 1.55;
-  margin: 24px 0 20px;
-  max-width: 280px;
 }
 
 .admin-content {
@@ -2318,14 +2334,14 @@ button:disabled {
 
 .display-clock span {
   color: rgba(255, 255, 255, 0.5);
-  font-size: 10px;
+  font-size: clamp(13px, 1.1vw, 18px);
   text-transform: capitalize;
 }
 
 .display-clock strong {
   color: var(--brand-highlight);
   font-family: var(--font-serif), serif;
-  font-size: clamp(25px, 2.3vw, 38px);
+  font-size: clamp(34px, 3vw, 52px);
   font-weight: 400;
   line-height: 1;
   margin-top: 4px;
@@ -2950,7 +2966,7 @@ button:disabled {
   }
 
   .queue-item {
-    grid-template-columns: 26px 105px 1fr;
+    grid-template-columns: 26px 105px minmax(0, 1fr) auto;
   }
 
   .ticket-time {
@@ -3239,7 +3255,7 @@ button:disabled {
     display: flex !important;
     flex-direction: column;
     gap: 1mm;
-    margin: 3mm 0 2mm !important;
+    margin: 2mm 0 1mm !important;
   }
 
   .ticket-print-date span {
@@ -3254,12 +3270,12 @@ button:disabled {
 
   .printed-code {
     font-family: ui-monospace, "Courier New", monospace;
-    font-size: 34pt;
+    font-size: 40pt;
     letter-spacing: 0;
   }
 
   .printed-service {
-    font-size: 9pt;
+    font-size: 11pt;
     font-weight: 700;
     margin: 1mm 0;
   }
@@ -3287,12 +3303,6 @@ button:disabled {
   .ticket-details strong {
     font-family: ui-monospace, "Courier New", monospace;
     font-size: 12pt;
-  }
-
-  .ticket-paper p.ticket-note {
-    font-size: 7.5pt;
-    line-height: 1.35;
-    margin: 3mm 0 0;
   }
 
 }
