@@ -149,15 +149,16 @@ export function OrganizationManagement({
         <section className="management-card">
           <div className="management-title"><div><h2>Serviços</h2><p>Serviços ativos aparecem na retirada de senha.</p></div></div>
           <form action={(data) => request("/api/app/services", "POST", fields(data))} className="inline-create-form">
-            <input name="name" placeholder="Nome do serviço" required />
-            <input maxLength={3} name="ticketPrefix" placeholder="Prefixo" required />
+            <input aria-label="Nome do serviço" name="name" placeholder="Nome do serviço" required />
+            <input aria-label="Prefixo da senha" maxLength={3} name="ticketPrefix" placeholder="Prefixo" required />
             <button className="primary-button" disabled={busy}>Adicionar</button>
           </form>
           <div className="management-list">
+            {services.length === 0 ? <p className="management-empty">Nenhum serviço cadastrado ainda. Adicione o primeiro acima.</p> : null}
             {services.map((service) => (
               <form action={(data) => request(`/api/app/services/${service.id}`, "PUT", { ...fields(data), active: data.get("active") === "on" })} key={service.id}>
-                <input defaultValue={service.name} name="name" required />
-                <input defaultValue={service.ticketPrefix} maxLength={3} name="ticketPrefix" required />
+                <input aria-label="Nome do serviço" defaultValue={service.name} name="name" required />
+                <input aria-label="Prefixo da senha" defaultValue={service.ticketPrefix} maxLength={3} name="ticketPrefix" required />
                 <label className="compact-toggle"><input defaultChecked={service.active} name="active" type="checkbox" /><span>{service.active ? "Ativo" : "Inativo"}</span></label>
                 <div className="management-row-actions">
                   <button className="secondary-link" disabled={busy}>Salvar</button>
@@ -207,6 +208,7 @@ export function OrganizationManagement({
             <button className="primary-button" disabled={busy}>Adicionar setor</button>
           </form>
           <div className="sector-management-list">
+            {sectors.length === 0 ? <p className="management-empty">Nenhum setor cadastrado ainda. Adicione o primeiro acima.</p> : null}
             {sectors.map((sector) => (
               <form
                 action={(data) => request(`/api/app/sectors/${sector.id}`, "PUT", {
@@ -266,9 +268,9 @@ export function OrganizationManagement({
         <section className="management-card">
           <div className="management-title"><div><h2>Guichês</h2><p>Defina o setor de cada balcão para limitar os serviços que ele recebe.</p></div></div>
           <form action={(data) => request("/api/app/desks", "POST", fields(data))} className="inline-create-form desk-create-form">
-            <input name="name" placeholder="Nome do guichê" required />
-            <input min={1} name="number" placeholder="Número" required type="number" />
-            <select name="sectorId" required>
+            <input aria-label="Nome do guichê" name="name" placeholder="Nome do guichê" required />
+            <input aria-label="Número do guichê" min={1} name="number" placeholder="Número" required type="number" />
+            <select aria-label="Setor do guichê" name="sectorId" required>
               <option value="">Selecione o setor</option>
               {sectors.filter((sector) => sector.active).map((sector) => (
                 <option key={sector.id} value={sector.id}>{sector.name}</option>
@@ -277,11 +279,12 @@ export function OrganizationManagement({
             <button className="primary-button" disabled={busy}>Adicionar</button>
           </form>
           <div className="management-list desk-management-list">
+            {desks.length === 0 ? <p className="management-empty">Nenhum guichê cadastrado ainda. Adicione o primeiro acima.</p> : null}
             {desks.map((desk) => (
               <form action={(data) => request(`/api/app/desks/${desk.id}`, "PUT", { ...fields(data), active: data.get("active") === "on" })} key={desk.id}>
-                <input defaultValue={desk.name} name="name" required />
-                <input defaultValue={desk.number} min={1} name="number" required type="number" />
-                <select defaultValue={desk.sectorId} name="sectorId" required>
+                <input aria-label="Nome do guichê" defaultValue={desk.name} name="name" required />
+                <input aria-label="Número do guichê" defaultValue={desk.number} min={1} name="number" required type="number" />
+                <select aria-label="Setor do guichê" defaultValue={desk.sectorId} name="sectorId" required>
                   {sectors.filter((sector) => sector.active || sector.id === desk.sectorId).map((sector) => (
                     <option key={sector.id} value={sector.id}>{sector.name}</option>
                   ))}

@@ -995,6 +995,21 @@ export function QueueApp({
                 </button>
               );
             })}
+            {queue.services.length === 0 ? (
+              loading ? (
+                [0, 1, 2].map((placeholder) => (
+                  <span
+                    aria-hidden="true"
+                    className="service-card service-card-skeleton"
+                    key={placeholder}
+                  />
+                ))
+              ) : (
+                <p className="service-empty" role="status">
+                  Nenhum serviço disponível no momento.
+                </p>
+              )
+            ) : null}
           </div>
         </section>
       ) : initialMode === "display" ? (
@@ -1270,7 +1285,9 @@ export function QueueApp({
               </div>
               <div className="queue-list">
                 {loading ? (
-                  <p className="queue-empty">Atualizando a fila…</p>
+                  <p aria-busy="true" className="queue-empty queue-loading">
+                    Atualizando a fila…
+                  </p>
                 ) : eligibleWaitingTickets.length ? (
                   eligibleWaitingTickets.slice(0, 6).map((ticket, index) => (
                     <article className="queue-item" key={ticket.id}>
@@ -1321,7 +1338,11 @@ export function QueueApp({
         <div className="error-toast" role="alert">
           <span>!</span>
           {error}
-          <button onClick={() => setError("")} type="button">
+          <button
+            aria-label="Fechar aviso"
+            onClick={() => setError("")}
+            type="button"
+          >
             ×
           </button>
         </div>
